@@ -1,0 +1,87 @@
+{
+  "name": "3d-fabric",
+  "version": "1.0.0",
+  "stage": "domain_extensions",
+  "license": "MIT",
+  "python_requires": ">=3.10",
+  "entrypoint": "run.py",
+  "actions": [
+    "probe",
+    "model",
+    "script",
+    "measure",
+    "snapshot",
+    "inspect",
+    "repair"
+  ],
+  "description": "The complete 3D modelling and 3D-printing toolchain for one machine, in one plugin: probe the local SolidCraft install, run an agent-written script headlessly, export STL/STEP/3MF/OBJ, edit an existing design with --in, recover its command list with script, measure volume/mass/topology, render PNG previews, and inspect watertightness, non-manifold edges, normals and size with trimesh. Repairs meshes that came from elsewhere.",
+  "external_requirement": {
+    "name": "SolidCraft",
+    "cli": "solidcraft-cli",
+    "required_for": [
+      "model",
+      "script",
+      "measure",
+      "snapshot"
+    ],
+    "optional_for": [
+      "probe",
+      "inspect",
+      "repair"
+    ],
+    "discovery": [
+      "--solidcraft PATH",
+      "SOLIDCRAFT_CLI",
+      "SOLIDCRAFT_HOME",
+      "PATH",
+      "known install folders"
+    ],
+    "verified_version": "0.30.1",
+    "missing_message": "请先在本机安装 SolidCraft 软件并配置环境变量，才能使用自然语言建模功能。",
+    "url": "https://github.com/tangency-labs/solidcraft",
+    "license": "MIT OR Apache-2.0",
+    "relationship": "third-party plugin; not affiliated with the SolidCraft project"
+  },
+  "input_types": [
+    "requirement_json",
+    "solidcraft_script_json",
+    "solidcraft_design_sc",
+    "step",
+    "stl",
+    "obj",
+    "ply",
+    "glb",
+    "3mf",
+    "off"
+  ],
+  "output_type": "mesh_file",
+  "output_types": [
+    "stl",
+    "stl_ascii",
+    "step",
+    "3mf",
+    "obj",
+    "ply",
+    "glb",
+    "sc",
+    "json",
+    "png"
+  ],
+  "dependencies": [
+    "trimesh>=4,<6",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "numpy-stl>=3.0"
+  ],
+  "dependency_licenses": {
+    "trimesh": "MIT",
+    "numpy": "BSD-3-Clause",
+    "scipy": "BSD-3-Clause",
+    "numpy-stl": "BSD-3-Clause"
+  },
+  "sandbox_required": true,
+  "sandbox_timeout_seconds": 300,
+  "produces_gate": true,
+  "skill_entry": "skills/3d-fabric/SKILL.md",
+  "author": "Jiaming Shi"
+}

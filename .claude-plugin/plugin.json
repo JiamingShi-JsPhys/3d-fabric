@@ -1,0 +1,22 @@
+{
+  "name": "3d-fabric",
+  "version": "1.0.0",
+  "description": "The complete 3D modelling and 3D-printing toolchain in one plugin: natural-language part building through the local SolidCraft CLI, plus reading, editing, measuring and previewing a design, and print-quality mesh inspection and repair.",
+  "author": {
+    "name": "Jiaming Shi",
+    "url": "https://github.com/JiamingShi-JsPhys"
+  },
+  "homepage": "https://github.com/JiamingShi-JsPhys/3d-fabric",
+  "repository": "https://github.com/JiamingShi-JsPhys/3d-fabric",
+  "license": "MIT",
+  "keywords": [
+    "solidcraft",
+    "3d-printing",
+    "3d-modeling",
+    "parametric-cad",
+    "stl",
+    "mesh-repair",
+    "trimesh",
+    "watertight"
+  ]
+}

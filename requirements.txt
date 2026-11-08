@@ -1,0 +1,9 @@
+# Runtime dependencies (install with: python -m pip install -r requirements.txt)
+# trimesh is the only geometry engine; everything else supports it.
+trimesh>=4,<6      # MIT
+numpy>=1.24        # BSD-3-Clause
+scipy>=1.10        # BSD-3-Clause  (boundary-loop connected components)
+
+# Test-only, optional at runtime:
+# numpy-stl>=3.0   # BSD-3-Clause  (independent STL cross-check in tests)
+# pytest>=7

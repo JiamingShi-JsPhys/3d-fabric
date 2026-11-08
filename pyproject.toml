@@ -1,0 +1,27 @@
+[project]
+name = "3d-fabric"
+version = "1.0.0"
+description = "The complete 3D modelling and 3D-printing toolchain in one plugin: natural-language part building through the local SolidCraft CLI, design reading, editing, measuring and previewing, plus print-quality mesh inspection and repair."
+authors = [{ name = "Jiaming Shi" }]
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "trimesh>=4,<6",
+    "numpy>=1.24",
+    "scipy>=1.10",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7",
+    "numpy-stl>=3.0",
+]
+
+[tool.pyright]
+extraPaths = ["."]
+include = ["run.py", "scripts", "tests"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

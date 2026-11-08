@@ -1,0 +1,14 @@
+{
+  "name": "3d-fabric-marketplace",
+  "owner": {
+    "name": "JiamingShi-JsPhys"
+  },
+  "plugins": [
+    {
+      "name": "3d-fabric",
+      "source": "./",
+      "version": "1.0.0",
+      "description": "The complete 3D modelling and 3D-printing toolchain in one plugin: natural-language part building through the local SolidCraft CLI, plus reading, editing, measuring and previewing a design, and print-quality mesh inspection and repair."
+    }
+  ]
+}

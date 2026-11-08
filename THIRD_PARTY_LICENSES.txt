@@ -1,0 +1,90 @@
+3d-fabric — third-party licences
+================================
+
+3d-fabric is MIT-licensed and contains no code copied from any slicing
+application or existing mesh-repair tool. It delegates geometry to the
+following libraries and only orchestrates their public APIs.
+
+trimesh
+    Version used in development: 5.2.0
+    Licence: MIT
+    https://github.com/mikedh/trimesh
+    Used for: mesh loading/export, watertightness and winding queries,
+    normal repair, single-face hole filling, STL/OBJ/PLY/3MF/GLB export.
+
+numpy
+    Version used in development: 2.4.1
+    Licence: BSD-3-Clause
+    https://numpy.org/
+    Used for: vertex/edge arrays, edge-multiplicity counting, small
+    matrix arithmetic for transforms.
+
+scipy
+    Version used in development: 1.17.0
+    Licence: BSD-3-Clause
+    https://scipy.org/
+    Used for: connected-component counting over boundary edges
+    (scipy.sparse.csgraph.connected_components), which is how boundary loops
+    are counted.
+
+numpy-stl
+    Version used in development: 3.x
+    Licence: BSD-3-Clause
+    https://github.com/warner/python-stl
+    Used in the test suite only, as an independent STL reader that proves
+    exported files are standard STL.
+
+SolidCraft (external application; its agent reference documents are bundled)
+-------------------------------------------------------------------------
+Project:  https://github.com/tangency-labs/solidcraft
+Licence:  MIT OR Apache-2.0 (dual-licensed by the SolidCraft contributors)
+Version used in development: 0.30.1
+
+SolidCraft is an open-source parametric CAD application written in Rust,
+run on the desktop, in a browser, and automated through its built-in MCP
+server and CLI. 3d-fabric is a third-party plugin for that application: it
+calls the SolidCraft command-line tool the user has installed on their own
+machine. This repository does not bundle, link against, modify or
+redistribute SolidCraft's binaries, libraries or assets, and it contains no
+SolidCraft source code. SolidCraft must be installed separately by the user.
+
+Bundled documentation and helper scripts
+    Path:      references/solidcraft/
+    Upstream:  https://github.com/tangency-labs/solidcraft, branch main,
+               paths skills/solidcraft-modeling, skills/solidcraft-editing,
+               skills/solidcraft-checking, skills/solidcraft-mechanisms
+    Fetched:   2026-11-06
+    Changed:   no — byte-identical to the upstream files (LF line endings)
+    Copyright: (c) 2026 SolidCraft contributors
+    Licence:   MIT, taken under upstream's MIT OR Apache-2.0 dual licence
+
+    SolidCraft publishes four agent reference documents that describe its
+    command shapes, plane axes, ids, traps, editing workflow, checking
+    procedure and mechanism workflow. 3d-fabric reproduces them verbatim,
+    together with the small helper scripts and the design template that ship
+    beside solidcraft-checking, so its own skill can read them without a
+    second installation. The MIT terms permit this provided the copyright
+    notice and permission notice are included: the full upstream MIT text is
+    at references/solidcraft/LICENSE-MIT and upstream's NOTICE at
+    references/solidcraft/NOTICE. Per-file SHA-256 values are listed in
+    references/solidcraft/README.md.
+
+    These files remain the work and copyright of the SolidCraft contributors;
+    they are not covered by 3d-fabric's copyright or its MIT grant. 3d-fabric
+    itself never executes them (the checking helper scripts run only if a user
+    runs them directly, and need uv with build123d).
+
+The command names and CLI behaviour referenced in this repository were
+observed by running a locally installed copy of the released CLI.
+
+This is a community project. It is not affiliated with, sponsored by or
+endorsed by the SolidCraft project or its authors.
+
+Statement on clean-room development
+-----------------------------------
+No source code from Cura, PrusaSlicer, Slic3r, Meshmixer, Netfabb, Blender,
+FreeCAD or any other existing modelling, slicing or repair application was
+consulted, copied, translated or adapted for this plugin. The two helpers in
+scripts/engine.py that are not thin wrappers — counting edge multiplicities
+and fan-filling an already-ordered boundary loop — are plain array/graph
+bookkeeping written from their mathematical description.

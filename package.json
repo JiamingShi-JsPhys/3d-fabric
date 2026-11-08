@@ -1,0 +1,29 @@
+{
+  "name": "3d-fabric",
+  "version": "1.0.0",
+  "description": "The complete 3D modelling and 3D-printing toolchain in one package: natural-language part building through the local SolidCraft CLI, plus reading, editing, measuring and previewing a design, and print-quality mesh inspection and repair.",
+  "license": "MIT",
+  "author": {
+    "name": "Jiaming Shi",
+    "url": "https://github.com/JiamingShi-JsPhys"
+  },
+  "homepage": "https://github.com/JiamingShi-JsPhys/3d-fabric",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JiamingShi-JsPhys/3d-fabric.git"
+  },
+  "main": "index.js",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "claude-code",
+    "solidcraft",
+    "3d-printing",
+    "3d-modeling",
+    "parametric-cad"
+  ]
+}
