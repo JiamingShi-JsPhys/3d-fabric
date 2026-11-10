@@ -10,6 +10,8 @@
 
 **Version:** 1.0.0 | **Actions:** 7 | **Verified against:** SolidCraft 0.30.1
 
+**Install [SolidCraft](https://solidcraft.io/download) first, then this plugin.** Both steps, every platform's command and the self-check are under [Installation](#installation).
+
 ---
 
 ## Security & Open Source Statement
@@ -108,88 +110,47 @@ A built model yields three files side by side: the mesh (`bracket.stl`), an edit
 
 ## Installation
 
-Three ways in. The plugin channel is the one that gets you the skill wired into the agent; the install script covers the environment checks a plugin channel cannot do.
+Install the whole thing as one plugin: `run.py`, `scripts/` and `skills/` share one engine, and a scattered copy fails.
+
+### Prerequisite: install SolidCraft
+
+3d-fabric ships no solid kernel; it drives a SolidCraft installation you already have. SolidCraft is open source and free (MIT / Apache-2.0 dual licence) and has to be installed separately:
+
+| Platform | Download |
+| --- | --- |
+| Windows | [solidcraft-windows-x64.msi](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-windows-x64.msi) |
+| macOS | [solidcraft-macos-universal.dmg](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-macos-universal.dmg) (Apple silicon and Intel) |
+| Linux | [solidcraft-linux-x86_64.AppImage](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-linux-x86_64.AppImage), or `sudo snap install solidcraft` |
+
+- Everything else — ARM64 and 32-bit builds, portable zip, `.deb`, `.rpm`, Flatpak — is on the [downloads page](https://solidcraft.io/download).
+- The Windows downloads are not code-signed yet, so SmartScreen stops you once: **More info → Run anyway**.
+- The browser build at <https://solidcraft.io> needs no install, but it exposes no `solidcraft-cli`, so **this plugin cannot use it**.
+
+`solidcraft-cli --version` printing a version line is enough; if it is not on `PATH`, point at it with `--solidcraft`, `SOLIDCRAFT_CLI` or `SOLIDCRAFT_HOME` — details in [docs/INSTALL_COMMANDS.md](docs/INSTALL_COMMANDS.md).
+
+> **Only four actions need it**: `model`, `script`, `measure`, `snapshot`. `inspect` and `repair` do not — a mesh from a scanner, a download or another CAD package stays checkable and repairable on a machine that has never installed SolidCraft.
 
 ### Method 1: install from the plugin marketplace by URL
 
-Register this repository's Git URL, then install the plugin it lists (registering twice is harmless — the second call reports it is already known).
+Every host has a plugin marketplace of its own. Register this repository's Git URL and install the plugin it lists (registering twice is harmless — the second call reports it is already known).
 
 ```bash
 https://github.com/JiamingShi-JsPhys/3d-fabric
 ```
 
+An unpublished, renamed or moved repository changes nothing: the marketplace manifest uses `source: "./"`, a relative path, so the line above can be replaced with the folder you already have — installing never touches the network.
+
 ### Method 2: install with commands
 
-**Claude Code** — from your shell:
-
-```bash
-claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPhys/3d-fabric.git
-```
-
-**Claude Code** — from inside a session, add the marketplace pinned to the release tag:
-
-```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
-```
-
-Then install the entry it lists:
-
-```text
-/plugin install 3d-fabric@3d-fabric-marketplace
-```
-
-**Manual** — if you would rather not use a marketplace, clone the repository and run it in place:
-
-```bash
-python -m pip install -r requirements.txt
-python run.py --action probe
-```
-
-**dsh** — DeepSeek Harness installs plugins as npm packages. The repository therefore carries a `package.json` and a `cordis.patch.yml` beside the Claude Code manifests, and `index.js` registers the skill with dsh's skill registry:
-
-```bash
-dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric
-```
-
-dsh refuses any package whose `package.json` lacks `dsh.bundle.patch` — that is the *"这个包没有声明组合包"* refusal (`reasonNotBundle`), and it is why 1.0.0 would not install there. Upgrading means uninstalling first; dsh does not replace an installed version in place.
-
-**Codex** — register the URL as a Git marketplace, then install from it (`--ref` pins the release tag; an SSH URL or a local path works in place of the HTTPS one):
-
-```bash
-codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.0.0
-codex plugin add 3d-fabric@3d-fabric-marketplace
-```
-
-**CodeBuddy** — the same shape as Claude Code:
-
-```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
-```
-
-```text
-/plugin install 3d-fabric@3d-fabric-marketplace
-```
-
-**Cursor, Windsurf, Cline, Continue, Roo Code, GitHub Copilot** — these read a rule file from their own location, and none of them accepts this repository as a plugin. **No vendor ships an installer that understands another vendor's rule file**, so this repository ships one:
-
-```bash
-git clone https://github.com/JiamingShi-JsPhys/3d-fabric.git
-python 3d-fabric/install.py --project <your-project>
-```
-
-That one command writes every project-scoped rule file at once — `.cursor/rules/3d-fabric.mdc`, `.windsurf/rules/3d-fabric.md`, `.clinerules/3d-fabric.md`, `.continue/rules/3d-fabric.md`, `.roo/rules/3d-fabric.md`, `.github/copilot-instructions.md`, and the generic `AGENTS.md` that Codex, opencode and Copilot agents also read. `--global` adds the user-scoped `AGENTS.md` for opencode (`~/.config/opencode/`) and Codex (`$CODEX_HOME` or `~/.codex/`), skipping any host this machine does not have. `--list` prints every destination without writing, `--dry-run` previews the run, `--only cursor,codex` narrows it.
-
-Re-running is safe: an identical file reports `unchanged`, and a rule file that has drifted is left alone unless you pass `--force`. Every rule file is `AGENTS.md` verbatim behind that host's header, so one edit to the contract reaches all six — and `tests/test_plugin_manifests.py` fails if they drift apart.
-
-None of these hosts carries the Python prerequisites for you: the seven actions still need `pip install -r requirements.txt` and a local SolidCraft.
+Claude Code, Codex, dsh and CodeBuddy each take one plugin command; Cursor, Windsurf, Cline, Continue, Roo Code, GitHub Copilot and opencode read rule files, and one script writes them all. Every host's full command, every `install.py` flag and the optional capabilities are on this page: **[docs/INSTALL_COMMANDS.md](docs/INSTALL_COMMANDS.md)**.
 
 ### Method 3: let your AI install it
 
 ```bash
-Please visit the GitHub repository `https://github.com/JiamingShi-JsPhys/3d-fabric`, clone it, and run `python install.py --check --deps`. If your host has a plugin system, install it as a plugin instead so the skill keeps its trigger conditions.
+Please visit the GitHub repository `https://github.com/JiamingShi-JsPhys/3d-fabric`, clone it, and run `python install.py --check --deps`. If your host has a plugin system, install the whole set as a single plugin instead; that script covers the hosts that read rule files.
 ```
 
-> **Warning**: an AI that copies `run.py` on its own without `scripts/` will get a plugin that cannot import anything. Install through the marketplace or let `install.py` do the copy — it keeps `run.py`, `scripts/` and `skills/` together.
+> **Warning**: an AI that copies `run.py` without `scripts/` can scatter the files into unrelated directories. Modules import each other, and a loose copy fails outright. If you want the complete plugin, use Method 1.
 
 ---
 
@@ -256,11 +217,11 @@ Python 3.10+ and `trimesh`, `numpy` and `scipy` — all permissively licensed
 (MIT / BSD-3-Clause) and installed with `python -m pip install -r requirements.txt`.
 
 **SolidCraft** is required for `model`, `script`, `measure` and `snapshot`. The
-plugin does not ship it; install it from
-<https://github.com/tangency-labs/solidcraft> (MIT OR Apache-2.0). `probe`
-accepts the CLI from `--solidcraft`, `SOLIDCRAFT_CLI`, `SOLIDCRAFT_HOME`, `PATH`,
-or the usual install folders, and verifies each candidate by running
-`--version` — a file that cannot answer is not accepted.
+plugin does not ship it; [Prerequisite: install SolidCraft](#prerequisite-install-solidcraft) above covers the
+downloads (MIT OR Apache-2.0, <https://solidcraft.io/download>). `probe` accepts
+the CLI from `--solidcraft`, `SOLIDCRAFT_CLI`, `SOLIDCRAFT_HOME`, `PATH`, or the
+usual install folders, and verifies each candidate by running `--version` — a
+file that cannot answer is not accepted.
 
 Nothing is vendored. `numpy-stl` appears only in the test suite, as an
 independent STL reader used to prove exported files are standard STL.
@@ -290,6 +251,10 @@ independent STL reader used to prove exported files are standard STL.
 ├── README_zh.md                      # 简体中文
 ├── THIRD_PARTY_LICENSES.txt          # upstream licences + SolidCraft relationship
 ├── cordis.patch.yml                  # dsh: inserts the plugin into a profile
+├── docs/
+│   ├── INSTALL_COMMANDS.md           # every host's install command, every install.py flag
+│   ├── INSTALL_COMMANDS_zh.md        # the same, in Chinese
+│   └── DEPENDENCIES.md               # capability / dependency / missing-behaviour matrix
 ├── examples/
 │   ├── bracket_request.json          # natural language + 21 SolidCraft commands
 │   ├── damaged_part.stl              # holed sphere for inspect / repair demos

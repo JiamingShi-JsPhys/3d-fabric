@@ -10,6 +10,8 @@
 
 **版本：** 1.0.0 | **动作数：** 7 | **已验证于：** SolidCraft 0.30.1
 
+**先装 [SolidCraft](https://solidcraft.io/download)，再装本插件。** 两步、各平台命令与自检都在[安装与下载](#安装与下载)里。
+
 ---
 
 ## 安全与开源声明
@@ -76,90 +78,49 @@ flowchart LR
 
 ---
 
-## 安装
+## 安装与下载
 
-三种方式。插件渠道能把技能真正接进 Agent；安装脚本负责插件渠道做不到的环境检查。
+请按一个完整插件安装：`run.py`、`scripts/` 与 `skills/` 共用同一个引擎，拆散目录会失效。
+
+### 前置：装 SolidCraft
+
+3d-fabric 不含实体核，只驱动本机已安装的 SolidCraft。它开源免费（MIT / Apache-2.0 双许可），需要你自己装：
+
+| 平台 | 下载 |
+| --- | --- |
+| Windows | [solidcraft-windows-x64.msi](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-windows-x64.msi) |
+| macOS | [solidcraft-macos-universal.dmg](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-macos-universal.dmg)（Apple silicon 与 Intel 共用） |
+| Linux | [solidcraft-linux-x86_64.AppImage](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-linux-x86_64.AppImage)，或 `sudo snap install solidcraft` |
+
+- 完整下载页（ARM64、32 位、便携 zip、`.deb`、`.rpm`、Flatpak）：<https://solidcraft.io/download>
+- Windows 安装包目前没有代码签名，SmartScreen 会拦一次：**更多信息 → 仍要运行**。
+- 浏览器版 <https://solidcraft.io> 免安装，但它不提供 `solidcraft-cli`，**本插件用不了**。
+
+装完 `solidcraft-cli --version` 能打印出版本号就成了；它不在 `PATH` 上时用 `--solidcraft`、`SOLIDCRAFT_CLI` 或 `SOLIDCRAFT_HOME` 指过去，细节见 [docs/INSTALL_COMMANDS_zh.md](docs/INSTALL_COMMANDS_zh.md)。
+
+> **只有四个动作需要它**：`model`、`script`、`measure`、`snapshot`。`inspect` 与 `repair` 不需要——扫描件、下载件、别家 CAD 出的网格，在一台没装过 SolidCraft 的机器上照样能查能修。
 
 ### 方法一：从插件市场用 URL 安装
 
-注册本仓库的 Git 地址，再安装它列出的插件（重复注册无害，第二次会提示已经注册过）。
+每个宿主都有自己的插件市场。把本仓库的 Git URL 注册进去，再安装它列出的插件即可（重复注册没有副作用，第二次会提示已存在）。
 
 ```bash
 https://github.com/JiamingShi-JsPhys/3d-fabric
 ```
 
+仓库还没公开、改了名或换了账号时也不影响安装：市场清单里 `source` 写的是相对路径 `./`，把上面这行换成你手上那个文件夹的路径即可，安装过程不访问远端。
+
 ### 方法二：用命令安装
 
-**Claude Code** —— 在 shell 里：
-
-```bash
-claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPhys/3d-fabric.git
-```
-
-**Claude Code** —— 在会话内，先按发布标签固定市场版本：
-
-```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
-```
-
-再安装它列出的条目：
-
-```text
-/plugin install 3d-fabric@3d-fabric-marketplace
-```
-
-**手动** —— 不想用市场就克隆仓库原地运行：
-
-```bash
-python -m pip install -r requirements.txt
-python run.py --action probe
-```
-
-**dsh** —— DeepSeek Harness 把插件当 npm 包安装。所以仓库在 Claude Code 的清单之外，还带了 `package.json` 与 `cordis.patch.yml`，由 `index.js` 把技能注册进 dsh 的技能表：
-
-```bash
-dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric
-```
-
-`package.json` 里没有 `dsh.bundle.patch` 的包，dsh 一律拒收——就是「这个包没有声明组合包」（内部原因码 `reasonNotBundle`），也是 1.0.0 装不进去的原因。升级要先卸载：dsh 不会原地替换已安装的版本。
-
-**Codex** —— 先把仓库注册成 Git 市场，再从市场里装（`--ref` 固定到发布标签，也可以换成 SSH 地址或本地路径）：
-
-```bash
-codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.0.0
-codex plugin add 3d-fabric@3d-fabric-marketplace
-```
-
-**CodeBuddy** —— 与 Claude Code 同一套命令：
-
-```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
-```
-
-```text
-/plugin install 3d-fabric@3d-fabric-marketplace
-```
-
-**Cursor、Windsurf、Cline、Continue、Roo Code、GitHub Copilot** —— 这几家读的是各自位置上的规则文件，都不接受本仓库作为插件。**没有任何厂商的安装器认得别家的规则文件**，所以这个仓库自带一个：
-
-```bash
-git clone https://github.com/JiamingShi-JsPhys/3d-fabric.git
-python 3d-fabric/install.py --project <你的项目>
-```
-
-一条命令写齐所有项目级规则文件——`.cursor/rules/3d-fabric.mdc`、`.windsurf/rules/3d-fabric.md`、`.clinerules/3d-fabric.md`、`.continue/rules/3d-fabric.md`、`.roo/rules/3d-fabric.md`、`.github/copilot-instructions.md`，以及 Codex、opencode 与 Copilot agents 都读的通用 `AGENTS.md`。`--global` 另外写用户级的两份：opencode 的 `~/.config/opencode/AGENTS.md` 与 Codex 的 `$CODEX_HOME`（默认 `~/.codex/`），本机没有的宿主直接跳过。`--list` 只列目标不写盘，`--dry-run` 预演，`--only cursor,codex` 只装其中几家。
-
-重复运行是安全的：完全相同的文件报 `unchanged`，已经改过的规则文件不动，除非加 `--force`。每个规则文件都是 `AGENTS.md` 的逐字正文加该宿主自己的头部，改一处就同步到六处——`tests/test_plugin_manifests.py` 会在它们漂移时报错。
-
-这些宿主都不会替你准备 Python 依赖：七个动作仍然需要 `pip install -r requirements.txt` 与本机的 SolidCraft。
+Claude Code、Codex、dsh 与 CodeBuddy 用一行插件命令即可；Cursor、Windsurf、Cline、Continue、Roo Code、GitHub Copilot 与 opencode 读规则文件，一个脚本能把它们全部写好。各宿主的完整命令、`install.py` 的全部参数与可选能力都在这一页：**[docs/INSTALL_COMMANDS_zh.md](docs/INSTALL_COMMANDS_zh.md)**。
 
 ### 方法三：让 AI 帮你装
 
 ```bash
-请访问 GitHub 仓库 `https://github.com/JiamingShi-JsPhys/3d-fabric` 并克隆，然后运行 `python install.py --check --deps`。如果你的宿主有插件系统，请优先以插件方式安装，这样技能能保留它的触发条件。
+请访问 GitHub 仓库 `https://github.com/JiamingShi-JsPhys/3d-fabric` 并克隆它，然后运行 `python install.py --check --deps`。如果你的宿主有插件系统，请改为把整套作为单一插件安装；该脚本覆盖的是读规则文件的那些宿主。
 ```
 
-> **警告**：让 AI 单独复制 `run.py` 而不带 `scripts/`，你会得到一个导入即失败的插件。请走插件市场，或让 `install.py` 来复制——它会把 `run.py`、`scripts/` 与 `skills/` 一起搬。
+> **警告**：使用 AI 自动安装时，AI 有概率会把 `run.py` 与 `scripts/` 打散，复制到无关目录中。模块之间互相导入，散装副本会直接失效。如果你需要完整的插件功能，请使用方法一。
 
 ---
 
@@ -214,7 +175,7 @@ python run.py --action model --input req.json --root ./ws --json
 
 Python 3.10+ 以及 `trimesh`、`numpy`、`scipy`——都是宽松许可（MIT / BSD-3-Clause），用 `python -m pip install -r requirements.txt` 安装。
 
-**SolidCraft 只有 `model`、`script`、`measure`、`snapshot` 需要**，插件不附带它。请从 <https://github.com/tangency-labs/solidcraft> 安装（MIT OR Apache-2.0）。`probe` 会从 `--solidcraft`、`SOLIDCRAFT_CLI`、`SOLIDCRAFT_HOME`、`PATH` 或常见安装目录取用 CLI，并对每个候选跑 `--version` 验活——答不出来的文件不会被接受。
+**SolidCraft 只有 `model`、`script`、`measure`、`snapshot` 需要**，插件不附带它，下载方式见上面的[前置：装 SolidCraft](#前置装-solidcraft)（MIT OR Apache-2.0，<https://solidcraft.io/download>）。`probe` 会从 `--solidcraft`、`SOLIDCRAFT_CLI`、`SOLIDCRAFT_HOME`、`PATH` 或常见安装目录取用 CLI，并对每个候选跑 `--version` 验活——答不出来的文件不会被接受。
 
 本仓库不 vendor 任何第三方代码。`numpy-stl` 只出现在测试里，作为独立 STL 读取器，用来证明导出文件是标准 STL。
 
@@ -243,6 +204,10 @@ Python 3.10+ 以及 `trimesh`、`numpy`、`scipy`——都是宽松许可（MIT 
 ├── README_zh.md                      # 本文件
 ├── THIRD_PARTY_LICENSES.txt          # 上游许可清单 + 与 SolidCraft 的关系
 ├── cordis.patch.yml                  # dsh：把插件插入 profile
+├── docs/
+│   ├── INSTALL_COMMANDS.md           # 各宿主完整安装命令、install.py 全部参数
+│   ├── INSTALL_COMMANDS_zh.md        # 同上，中文
+│   └── DEPENDENCIES.md               # 能力—依赖—缺失时行为的矩阵
 ├── examples/
 │   ├── bracket_request.json          # 自然语言 + 21 条 SolidCraft 命令
 │   ├── damaged_part.stl              # 带孔的球体，用于 inspect / repair 演示
