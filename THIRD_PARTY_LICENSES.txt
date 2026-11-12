@@ -27,6 +27,20 @@ scipy
     (scipy.sparse.csgraph.connected_components), which is how boundary loops
     are counted.
 
+networkx
+    Version used in development: 3.7
+    Licence: BSD-3-Clause
+    https://networkx.org/
+    Used for: the graph library trimesh.repair.fill_holes needs when repair
+    is asked to close holes.
+
+lxml
+    Version used in development: 6.1.3
+    Licence: BSD-3-Clause
+    https://lxml.de/
+    Used for: the XML writer trimesh's 3MF exporter needs when a mesh is
+    exported as .3mf.
+
 numpy-stl
     Version used in development: 3.x
     Licence: BSD-3-Clause

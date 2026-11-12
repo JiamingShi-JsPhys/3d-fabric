@@ -3,6 +3,8 @@
 trimesh>=4,<6      # MIT
 numpy>=1.24        # BSD-3-Clause
 scipy>=1.10        # BSD-3-Clause  (boundary-loop connected components)
+networkx>=2.8      # BSD-3-Clause  (trimesh hole filling)
+lxml>=4.9          # BSD-3-Clause  (trimesh 3MF export)
 
 # Test-only, optional at runtime:
 # numpy-stl>=3.0   # BSD-3-Clause  (independent STL cross-check in tests)

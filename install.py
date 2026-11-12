@@ -66,7 +66,7 @@ SKILL_TREES = [
     ("licenses", "licenses"),
 ]
 
-REQUIRED_MODULES = ("trimesh", "numpy", "scipy")
+REQUIRED_MODULES = ("trimesh", "numpy", "scipy", "networkx", "lxml")
 
 # ---------------------------------------------------------------------------
 # rule files for the hosts that have no plugin channel
@@ -212,7 +212,7 @@ def _check_deps() -> tuple:
         return False, "missing Python packages: " + ", ".join(missing)
     import trimesh  # noqa: F401  (imported for the version string)
 
-    return True, f"trimesh {trimesh.__version__}, numpy, scipy present"
+    return True, f"trimesh {trimesh.__version__}, numpy, scipy, networkx, lxml present"
 
 
 def _check_solidcraft() -> tuple:

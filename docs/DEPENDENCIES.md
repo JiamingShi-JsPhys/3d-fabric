@@ -1,6 +1,6 @@
 # Dependency matrix
 
-`3d-fabric` starts with Python's standard library plus three runtime packages.
+`3d-fabric` starts with Python's standard library plus five runtime packages.
 SolidCraft is an external program, not a Python package, and either half of the
 mesh pipeline degrades with a clear message rather than a traceback.
 
@@ -8,6 +8,8 @@ mesh pipeline degrades with a clear message rather than a traceback.
 |---|---|---|---|---|
 | `inspect`, `repair` — load, analyse, export a mesh | `trimesh` + `numpy` | MIT / BSD-3-Clause | yes | `ImportError` naming the package and the install command |
 | Boundary-loop connected components during `repair` | `scipy` | BSD-3-Clause | yes | same import error; no silent fallback |
+| Hole filling, through `trimesh.repair` | `networkx` | BSD-3-Clause | yes | `repair` without `--no-fill-holes` fails with `No module named 'networkx'` |
+| `.3mf` export, through `trimesh.exchange.threemf` | `lxml` | BSD-3-Clause | yes | `.3mf` export fails with `No module named 'lxml'`; STL, OBJ and STEP still work |
 | `model`, `script`, `measure`, `snapshot` | `solidcraft-cli` | MIT OR Apache-2.0 | yes for those four | `probe` reports `UNVERIFIED` with an install hint; the action exits non-zero and never reports success |
 | the thirty Blender skills | a local Blender **and** a Blender MCP server (`mcp__blender__*` / `mcp__blender_official__*`) | Blender: GPL-3.0 (separate program, called over MCP) | yes for those skills | the skill says Blender is missing; it never describes a render it did not make. `run.py` never touches Blender |
 | `snapshot` rendering | SolidCraft's own renderer (GPU or CPU) | — | yes for that action | SolidCraft reports the failure; `snapshot` passes it through unchanged |

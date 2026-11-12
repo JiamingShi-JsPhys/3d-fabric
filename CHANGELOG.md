@@ -43,6 +43,13 @@ the package.
   concurrent runs into one folder overwrote each other. The name carries the
   PID and a random tag now, and `run()` returns `results_path` so callers do
   not have to guess it.
+- **`networkx` and `lxml` are declared dependencies now.**
+  `trimesh.repair.fill_holes` needs a graph library and the 3MF writer needs an
+  XML one, so on a clean install — `pip install -r requirements.txt` and nothing
+  else — `repair` and `.3mf` export failed with `No module named 'networkx'` and
+  `No module named 'lxml'`. Both are listed in
+  `requirements.txt`, `pyproject.toml`, `install.py --check` and the dependency
+  matrix in `docs/DEPENDENCIES.md`, and CI now proves the clean install.
 - **Gate filenames carry milliseconds.** `3d-fabric_<stamp>.json` was stamped to
   the second, so two runs finishing in the same second produced one file and
   the later one won silently.

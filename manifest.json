@@ -71,12 +71,16 @@
     "trimesh>=4,<6",
     "numpy>=1.24",
     "scipy>=1.10",
+    "networkx>=2.8",
+    "lxml>=4.9",
     "numpy-stl>=3.0"
   ],
   "dependency_licenses": {
     "trimesh": "MIT",
     "numpy": "BSD-3-Clause",
     "scipy": "BSD-3-Clause",
+    "networkx": "BSD-3-Clause",
+    "lxml": "BSD-3-Clause",
     "numpy-stl": "BSD-3-Clause"
   },
   "sandbox_required": true,

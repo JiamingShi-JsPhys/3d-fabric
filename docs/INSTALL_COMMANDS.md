@@ -173,7 +173,7 @@ python install.py --skill-dir ~/.claude/skills/3d-fabric
 ## Optional capabilities and dependencies
 
 ```bash
-pip install -r requirements.txt    # core: trimesh, numpy, scipy
+pip install -r requirements.txt    # core: trimesh, numpy, scipy, networkx, lxml
 pip install numpy-stl              # tests only: an independent STL reader
 ```
 

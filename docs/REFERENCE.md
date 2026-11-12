@@ -91,8 +91,8 @@ the message on stderr distinguishes it from a gate verdict.
 ## Dependencies
 
 `docs/DEPENDENCIES.md` is the capability × package × licence × required-or-optional matrix, including
-what each action reports when a package is missing. In short: `trimesh`, `numpy` and `scipy` are
-required; `numpy-stl` is test-only; SolidCraft is required by `model`, `script`, `measure` and
+what each action reports when a package is missing. In short: `trimesh`, `numpy`, `scipy`, `networkx` and
+`lxml` are required; `numpy-stl` is test-only; SolidCraft is required by `model`, `script`, `measure` and
 `snapshot`; Blender plus a Blender MCP server are required by the thirty bundled skills and by nothing
 in `run.py`.
 

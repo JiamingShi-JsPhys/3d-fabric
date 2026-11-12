@@ -90,8 +90,8 @@ gate 文件名带毫秒，同一秒内结束的两次运行会写成两个文件
 ## 依赖
 
 `docs/DEPENDENCIES.md` 是「能力 × 包 × 许可 × 必装或可选」的对照表，也写明某个包缺失时各动作报什么。
-简言之：`trimesh`、`numpy`、`scipy` 必装；`numpy-stl` 只用于测试；SolidCraft 是 `model`、`script`、
-`measure`、`snapshot` 的前提；Blender 与 Blender MCP 是 30 个随附技能的前提，`run.py` 一行都不需要。
+简言之：`trimesh`、`numpy`、`scipy`、`networkx`、`lxml` 必装；`numpy-stl` 只用于测试；
+SolidCraft 是 `model`、`script`、`measure`、`snapshot` 的前提；Blender 与 Blender MCP 是 30 个随附技能的前提，`run.py` 一行都不需要。
 
 ## 仓库布局
 
