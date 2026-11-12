@@ -1,10 +1,10 @@
 # 3d-fabric
 
-> **这台机器上做 3D 需要的一切，一个插件，两半。**
+> **面向本机 SolidCraft 安装的 CAD 前端与打印质量门，自带 30 个 Blender 技能。**
 >
-> **CAD 一半**：把描述的零件写成 SolidCraft 脚本，静默执行，导出 STL / STEP / 3MF / OBJ，立刻检查会让切片软件拒收的缺陷；也能读懂、修改、测量、预览一个已有设计。**Blender 一半**：随附 30 个技能，覆盖另一种 3D 工作——有机与硬表面建模、PBR 材质、灯光、相机、渲染、UV 贴图、动画，以及专门否决坏动画的质量门。
+> 使用它不需要你先写 SolidCraft 命令列表：七个 CAD 动作随仓库一起交付，直接驱动你本机已装的 SolidCraft。`model` 写出 `{"commands": [...]}` 脚本、静默执行并导出 STL / STEP / 3MF / OBJ；`script` 从一份没带源文件的 `.sc` 或 `.step` 里把命令列表还原出来；`measure` 从 B-rep 读出体积、质量与拓扑；`snapshot` 渲染 PNG；`inspect` 给出网格的打印判定；`repair` 修掉它能修的缺陷。另有 30 个 Blender 技能逐字随附，覆盖另一种 3D 工作——有机与硬表面建模、材质、灯光、相机、渲染、UV 贴图与动画。全部内容都在安装包里，按交付状态即可运行。
 >
-> `scripts/solidcraft.py` 是唯一认识 SolidCraft CLI 的文件——它探测安装位置、用 `--version` 验活、执行脚本，并且在承诺的导出文件没有真正落盘时拒绝报告成功。`scripts/engine.py` 是唯一认识几何的文件，所有运算都委托给 `trimesh`（MIT）。`run.py` 只负责编排 CAD 的七个动作；Blender 技能通过 MCP 驱动另一个应用。
+> `scripts/solidcraft.py` 是唯一认识 SolidCraft CLI 的文件：它探测安装位置，只有 `--version` 有应答才接受，执行脚本，并且在承诺的导出文件没有真正落盘时拒绝报告成功。`scripts/engine.py` 是唯一认识几何的文件，所有运算都委托给 `trimesh`（MIT）。`run.py` 只负责编排这七个动作。
 
 [English](README.md) · **简体中文**
 
@@ -24,24 +24,15 @@
 
 ## 为什么需要 3d-fabric？
 
-**如果只装一个 3D 插件，就装这个。** 在它之前，一台机器需要：一个建模技能产出零件、一个独立审计技能判断它、一个查看器看它、再一个脚本修补别人发来的破损 STL——各管一段，彼此不通。3d-fabric 把整条路收进一个插件、一个 CLI、一套 gate 格式、一套退出码：建模、修改、测量、预览、验证、修复。
+Agent 能写参数化 CAD 脚本，但它看不出结果能不能打印；而“建出来了”也不等于“能打印”。SolidCraft 对一次完全没切中的切除照样返回 `ok`，退出码 0 也不代表文件真的写了出去，切片软件则会对一个处处不闭合的网格直接拒收。回答这些问题的工具通常是分开的：一个建模技能产零件、一个审计技能判断它、一个查看器看它、再一个脚本修补别人发来的破损 STL。各管一段，报告格式还互不相同，于是 Agent 要去调和几份判定，人要去记住该信哪一份。
 
-它不做的是切片——G-code、支撑、壁厚与悬垂分析；艺术那一边则没有留下空白：
-1.1.1 把 Blender 的整套 Agent 技能收了进来，有机造型、材质、灯光、相机、渲染与
-动画都在这里，不必再装第二份。
+3d-fabric 从两个层面回应这个问题，两者都在同一个仓库里。
 
-**什么时候用哪一半。** 有尺寸、要打印的零件是 CAD：`run.py` 加 SolidCraft。
-轮廓、表面质感或运动才是重点的东西是 Blender：随附技能，需要本机 Blender 和
-Blender MCP。两半共享一条交付路径——Blender 的网格要打印，先导出 STL，再走
-`run.py --action inspect` 与 `repair`。
+**桥负责在两种语言之间转换。** Agent 说自然语言，SolidCraft 吃 JSON 命令列表。`scripts/solidcraft.py` 会在所有可能的位置找到 CLI（`--solidcraft`、`SOLIDCRAFT_CLI`、`SOLIDCRAFT_HOME`、`PATH`，以及厂商默认安装目录），用 `--version` 验活以保证 `PATH` 上的旧壳子混不进来，带 `--out` 执行脚本，再逐一确认承诺的文件真实存在且非空。同一个桥也回答“别人做的设计”的问题：`script` 把 `.sc` 还原成命令列表，`model --in` 在它上面重放补丁，`measure` 从 B-rep 读出体积、质量与拓扑，`snapshot` 渲染成 PNG。退出码、stderr 与逐步结果清单全部汇入同一份报告。
 
-Agent 能写参数化 CAD 脚本，但它看不出结果能不能打印。而且"建出来了"不等于"能打印"：SolidCraft 对一次完全没切中的切除照样返回 `ok`，切片软件也对一个处处不闭合的网格照拒不误。
+**门提供桥自己给不出的判定。** `scripts/engine.py` 测量切片软件真正在意的东西：水密性、绕序一致性、法线朝向、非流形边、边界环及其数量、退化面、包围盒与带符号体积——每个封闭壳单独检查，所以一个很小的反向零件藏不进一个大的正确零件后面。判定只有三档：`ready_to_print`、`needs_repair`、`blocked`，每个缺陷都带代码、严重级别与计数。失败的模型永远不会被报告为成功。
 
-3d-fabric 用两半补上这个闭环，两半都必要：
-
-**桥。** Agent 说自然语言，SolidCraft 吃 JSON 命令列表。`scripts/solidcraft.py` 会在所有可能的位置找到 CLI（`--solidcraft`、`SOLIDCRAFT_CLI`、`SOLIDCRAFT_HOME`、`PATH`，以及厂商默认安装目录），用 `--version` 验活以保证 PATH 上的假壳子混不进来，带 `--out` 执行脚本，再逐一确认承诺的文件真实存在且非空。同一个桥也回答"别人做的设计"的问题：`script` 把 `.sc` 还原成命令列表，`model --in` 在它上面重放补丁，`measure` 从 B-rep 读出体积、质量与拓扑，`snapshot` 渲染成 PNG。退出码、stderr 与逐步结果清单全部汇入同一份报告。
-
-**关。** `scripts/engine.py` 测量切片软件真正在意的东西：水密性、绕序一致性、法线朝向、非流形边、边界环数量、退化面、包围盒、带符号体积。判定只有三档——`ready_to_print`、`needs_repair`、`blocked`，每个缺陷都带代码、严重级别与计数。失败的模型永远不会被包装成成功。
+**什么时候用哪一半。** 有尺寸、要打印的零件是 CAD：`run.py` 加 SolidCraft。轮廓、表面质感或运动才是重点的东西是 Blender：随附技能，需要本机 Blender 和 Blender MCP。两半共享一条交付路径——Blender 的网格要打印，先导出 STL，再走 `run.py --action inspect` 与 `repair`。
 
 两半有意解耦：`inspect` 与 `repair` **完全不需要** SolidCraft。来自扫描仪、下载或别的软件的网格，在一台从未装过 CAD 的机器上照样能查、能修。
 
@@ -49,7 +40,7 @@ Agent 能写参数化 CAD 脚本，但它看不出结果能不能打印。而且
 
 ## 随附第三方材料
 
-`references/solidcraft/` 收录了 SolidCraft 为它自己的 MCP 服务发布的四份 Agent 参考文档——**modeling**、**editing**、**checking**、**mechanisms**——连同 `solidcraft-checking` 一起分发的小工具脚本和设计模板。本插件的技能靠它们查命令形状、平面轴、id、回复大小，以及那些"建出来但几何是错的"陷阱。
+`references/solidcraft/` 收录了 SolidCraft 为它自己的 MCP 服务发布的四份 Agent 参考文档——**modeling**、**editing**、**checking**、**mechanisms**——连同 `solidcraft-checking` 一起分发的小工具脚本和设计模板。本插件的技能靠它们查命令形状、平面轴、id、回复大小，以及那些“建出来但几何是错的”陷阱。
 
 准确地说：
 
@@ -64,11 +55,7 @@ Agent 能写参数化 CAD 脚本，但它看不出结果能不能打印。而且
 
 ## Blender 那一半
 
-`skills/` 里随附 30 个技能，逐字来自
-[RobLe3/cc-blender-skill](https://github.com/RobLe3/cc-blender-skill) 的
-commit `a2634b5`（MIT）。
-每个技能都在 `allowed-tools` 里声明了自己的 Blender MCP 工具，所以只有在接了
-Blender MCP 的会话里才会激活。
+`skills/` 里随附 30 个技能，逐字来自 [RobLe3/cc-blender-skill](https://github.com/RobLe3/cc-blender-skill) 的 commit `a2634b5`（MIT）。每个技能都在 `allowed-tools` 里声明了自己的 Blender MCP 工具，所以只有在接了 Blender MCP 的会话里才会激活。
 
 | 技能 | 负责 |
 | --- | --- |
@@ -86,7 +73,7 @@ Blender MCP 的会话里才会激活。
 | `orbital-hud-motion` | 环绕主体的 HUD 圆环、光晕、轨道弧 |
 | `animation-quality-gate` | 接触表、闪烁与剪影检查，决定一段动画收不收 |
 
-另外 17 个负责**按参考图重建**——"必须和这张图一模一样"靠的就是这一族：
+另外 17 个负责**按参考图重建**——“必须和这张图一模一样”靠的就是这一族：
 
 | 技能 | 负责 |
 | --- | --- |
@@ -95,7 +82,7 @@ Blender MCP 的会话里才会激活。
 | `mascot-logo-reconstruction` | 带失败门、锁定源文件的吉祥物/标志/头像重建 |
 | `orthographic-registration` | 把前/侧/后/顶视图注册进同一套坐标约定 |
 | `multiview-constraint-solver` | 判断一个刚体能否满足全部视图，先出约束（不需要 Blender 工具） |
-| `multiview-fit-loop` | 对照模板"比较—调整—重复"的闭环拟合 |
+| `multiview-fit-loop` | 对照模板“比较—调整—重复”的闭环拟合 |
 | `fit-repair-optimizer` | 把拟合报告变成修复队列 |
 | `landmark-fit-repair` | 按命名地标（尖角、边缘、眼睛、轮缘厚度）修形 |
 | `reference-analysis-validator` | 在宣称 1:1 之前校验参考素材 |
@@ -108,14 +95,9 @@ Blender MCP 的会话里才会激活。
 | `texture-state-animation` | 贴图状态切换，不要整图淡入淡出或跳变 |
 | `quality-refinement-autoloop` | 结果不达标时自我精修 |
 
-**这一半需要什么：** 本机装有 Blender，并接上一个 Blender MCP
-（ahujasid/blender-mcp 的 `mcp__blender__*`，或 `mcp__blender_official__*`）。
-没有它们，CAD 一半照常工作；Blender 技能会直接说缺什么，不会假装渲染过。
+**这一半需要什么：** 本机装有 Blender，并接上一个 Blender MCP（ahujasid/blender-mcp 的 `mcp__blender__*`，或 `mcp__blender_official__*`）。没有它们，CAD 一半照常工作；Blender 技能会直接说缺什么，不会假装渲染过。
 
-**这里不改它们。** 它们是上游文本；路由和本地建议写在
-`skills/3d-fabric/SKILL.md` 与 `AGENTS.md` 里。`skills/vendored.json` 记录上游
-取回日期和每个文件的 SHA-256，`tests/test_bundled_skills.py` 在文件与哈希不一致
-时报错。
+**这里不改它们。** 它们是上游文本；路由和本地建议写在 `skills/3d-fabric/SKILL.md` 与 `AGENTS.md` 里。`skills/vendored.json` 记录上游取回日期和每个文件的 SHA-256，`tests/test_bundled_skills.py` 在文件与哈希不一致时报错。
 
 ---
 
@@ -138,7 +120,13 @@ flowchart LR
     EXT["外部网格<br/>扫描件、下载、其他 CAD"] --> INSP
 ```
 
-建模成功会并排产出三个文件：网格（`bracket.stl`）、可编辑设计（`bracket.sc`）和生成它的原始脚本（`bracket.solidcraft.json`）。用 SolidCraft 打开 `.sc` 改参数再导出，或者直接重跑脚本，都能复现这个零件——而 `script` 能把这份命令列表从一个"没带原始脚本"的设计里找回来。
+这张图说明三件事：
+
+- **`probe` 是唯一的环境门。** 只有 `--version` 退出码为 0 时它才接受一个 CLI，所以 `PATH` 上的旧壳子会被拒绝而不是被使用。四个动作需要它；`inspect` 与 `repair` 不需要。
+- **写出的文件要被检查，而不是假定。** 命令列表里没带导出命令时 SolidCraft 会以退出码 0 结束却不落盘，因此 `model` 会逐一核实承诺的文件存在且非空，把这种静默执行判为 `FAIL`。
+- **本插件建的零件与外部网格走同一个门。** 无论出自 `model` 还是扫描仪，`inspect` 都给出同一套缺陷代码与同样三档判定。
+
+建模成功会并排产出三个文件：网格（`bracket.stl`）、可编辑设计（`bracket.sc`）和生成它的原始脚本（`bracket.solidcraft.json`）。用 SolidCraft 打开 `.sc` 改参数再导出，或者直接重跑脚本，都能复现这个零件——而 `script` 能把这份命令列表从一个“没带原始脚本”的设计里找回来。
 
 ---
 
@@ -234,7 +222,7 @@ Agent 会依次探测、写 SolidCraft 脚本、调用 `model`、读 gate，然�
 
 ### 需要命令行时
 
-所有能力都能在脚本与 CI 中无头运行：动作集、变换参数、gate JSON 结构与退出码见下文及 [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md)。
+所有能力都能在脚本与 CI 中无头运行：动作集、变换参数、gate JSON 结构与退出码见 [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md)。
 
 ```bash
 python run.py --action model --input req.json --root ./ws --json
@@ -317,6 +305,7 @@ Python 3.10+ 以及 `trimesh`、`numpy`、`scipy`——都是宽松许可（MIT 
     ├── test_cli.py                   # 退出码、gate 文件、stdout 契约
     ├── test_dsh_bundle.py            # dsh.bundle.patch、CJS 入口、版本一致
     ├── test_engine.py                # 几何、缺陷、修复、导出
+    ├── test_install.py               # --check、--skill-dir、参数处理
     ├── test_model.py                 # 完整建模 → 体检链路
     ├── test_plugin_manifests.py      # 四份插件清单 + 六份规则文件不许漂移
     ├── test_references.py            # SolidCraft 参考齐全、哈希一致
@@ -331,7 +320,7 @@ Python 3.10+ 以及 `trimesh`、`numpy`、`scipy`——都是宽松许可（MIT 
 python -m pytest
 ```
 
-共 124 个用例。覆盖几何引擎（STL 加载时的顶点焊接、绕支点的变换、每一类缺陷、四边形与 32 边形边界的补洞、反向壳体、用独立 STL 读取器验证的导出往返）、CLI 契约（退出码、gate 文件、人类可读与 `--json` 两种输出）、读设计的动作（`measure` 的总量与开口体、`snapshot` 的 PNG 产物、`script` 的还原、`model --in`）、随附参考（文件齐全、按 README 表校验 SHA-256、MIT 文本、`install.py --skill-dir` 会一并复制）、随附 Blender 技能（齐全、frontmatter 名字与目录一致、每个都绑定 Blender MCP 工具、跨技能相对链接可解析、哈希与 `skills/vendored.json` 一致）、dsh 包（`dsh.bundle.patch` 声明、CJS 入口能列出全部 31 个技能、与 Claude Code 清单的版本一致）、平台那一层（四份插件清单与六份规则文件，每份规则文件都锁定到 `AGENTS.md`）、安装器自身的检查，以及通过 Python 桩件驱动的 SolidCraft 桥——所以无论本机装没装 SolidCraft，测试都通过。装了真机时会额外跑一条集成用例，没装则跳过。
+共 137 个用例，全部通过。覆盖几何引擎（STL 加载时的顶点焊接、绕支点的变换、绕序、反向壳体、空腔与反向零件的区分、每一类缺陷、四边形与 32 边形边界的补洞、用独立 STL 读取器验证的导出往返）、CLI 契约（退出码、gate 文件、人类可读与 `--json` 两种输出）、读设计的动作（`measure` 的总量与开口体、`snapshot` 的 PNG 产物、`script` 的还原、`model --in`）、随附参考（文件齐全、按 README 表校验 SHA-256、MIT 文本、`install.py --skill-dir` 会一并复制）、随附 Blender 技能（齐全、frontmatter 名字与目录一致、每个都绑定 Blender MCP 工具、跨技能相对链接可解析、哈希与 `skills/vendored.json` 一致）、dsh 包（`dsh.bundle.patch` 声明、CJS 入口能列出全部 31 个技能、与 Claude Code 清单的版本一致）、平台那一层（四份插件清单与六份规则文件，每份规则文件都锁定到 `AGENTS.md`）、安装器自身的检查，以及通过 Python 桩件驱动的 SolidCraft 桥——所以无论本机装没装 SolidCraft，测试都通过。装了真机时会额外跑一条集成用例，没装则跳过。
 
 ---
 
@@ -340,6 +329,7 @@ python -m pytest
 如实的边界情况，依赖任何输出前请先读：
 
 - **把关只查几何，不查意图。** 一个水密模型仍可能是错的零件。把报告里的 `volume` 与 `extents` 和你算的值对一遍；SolidCraft 对完全没切中的切除照样报成功。
+- **不做切片。** G-code、支撑、悬垂与壁厚分析属于切片软件；3d-fabric 止于打印判定。
 - **补洞是平面扇面。** 出平面厚度超过半径 5% 的环会被跳过并写明原因，而不是硬填；跨越孔洞的曲面不会被重建。
 - **非流形边只报告、不修复。** 三个面共用的边会让 `success` 保持 `false`，剩余数量留在 `after.topology`；要拆开得用 CAD 工具。
 - **不做自交检测**——`trimesh` 没有稳健实现。
@@ -357,15 +347,23 @@ python -m pytest
 
 **安全漏洞（仅限此类）**：请**不要**用公开 Issues。请邮件至 `jiamingshi_git@outlook.com`。
 
-- **标题**：必须以 `_report` 前缀开头，后接产品名与简短摘要。
+- **标题**：必须以 `report` 前缀开头，后接产品名与简短摘要。
   - 示例：`report_3d-fabric: requirement JSON can write outside the output directory`
 - **正文**：必须包含复现步骤、确切命令行与环境。
+
+*提交清晰、可复现的 issue 或 PR 的贡献者，会在下一个版本的发布说明中致谢。*
+
+---
+
+## 致谢
+
+**wlheyuyang** —— [issue #1](https://github.com/JiamingShi-JsPhys/3d-fabric/issues/1) 报告了绕序不一致的网格仍能通过打印判定，并给出了复现步骤，这一条后来成为 1.1.1 的绕序修复。
 
 ---
 
 ## 商标声明
 
-"SolidCraft" 是本插件所驱动的开源 CAD 应用之名，此处仅用于说明兼容对象。3d-fabric 是独立的第三方插件，与 SolidCraft 项目及其贡献者没有隶属、赞助或背书关系。
+“SolidCraft” 是本插件所驱动的开源 CAD 应用之名，此处仅用于说明兼容对象。3d-fabric 是独立的第三方插件，与 SolidCraft 项目及其贡献者没有隶属、赞助或背书关系。
 
 ---
 
@@ -373,16 +371,11 @@ python -m pytest
 
 MIT。见 [LICENSE](LICENSE)。
 
-该授权只覆盖本项目自己的作品：`run.py`、`scripts/`、`3d-fabric` 技能、
-`install.py`、文档与测试。它**不**覆盖随附的第三方材料：
-
-- `skills/` —— 30 个 Blender 技能，© 2026 RobLe3，MIT
-  （[许可文本](licenses/cc-blender-skill-LICENSE.txt)）。
-- `references/solidcraft/` —— 四份 SolidCraft Agent 参考，
-  © 2026 SolidCraft contributors，MIT
-  （[许可文本](references/solidcraft/LICENSE-MIT)）。
-
-两者都是逐字复制，声明随文件一起分发，符合 MIT 的要求。完整清单见
-[THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)。
-
 **作者与维护者**：Jiaming Shi
+
+该授权只覆盖本项目自己的作品：`run.py`、`scripts/`、`3d-fabric` 技能、`install.py`、文档与测试。它**不**覆盖随附的第三方材料：
+
+- `skills/` —— 30 个 Blender 技能，© 2026 RobLe3，MIT（[许可文本](licenses/cc-blender-skill-LICENSE.txt)）。
+- `references/solidcraft/` —— 四份 SolidCraft Agent 参考，© 2026 SolidCraft contributors，MIT（[许可文本](references/solidcraft/LICENSE-MIT)）。
+
+两者都是逐字复制，声明随文件一起分发，符合 MIT 的要求。完整清单见 [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt)。
