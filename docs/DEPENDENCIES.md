@@ -9,6 +9,7 @@ mesh pipeline degrades with a clear message rather than a traceback.
 | `inspect`, `repair` — load, analyse, export a mesh | `trimesh` + `numpy` | MIT / BSD-3-Clause | yes | `ImportError` naming the package and the install command |
 | Boundary-loop connected components during `repair` | `scipy` | BSD-3-Clause | yes | same import error; no silent fallback |
 | `model`, `script`, `measure`, `snapshot` | `solidcraft-cli` | MIT OR Apache-2.0 | yes for those four | `probe` reports `UNVERIFIED` with an install hint; the action exits non-zero and never reports success |
+| the thirty Blender skills | a local Blender **and** a Blender MCP server (`mcp__blender__*` / `mcp__blender_official__*`) | Blender: GPL-3.0 (separate program, called over MCP) | yes for those skills | the skill says Blender is missing; it never describes a render it did not make. `run.py` never touches Blender |
 | `snapshot` rendering | SolidCraft's own renderer (GPU or CPU) | — | yes for that action | SolidCraft reports the failure; `snapshot` passes it through unchanged |
 | Every action | Python 3.10+ | PSF-2.0 | yes | `install.py --check` reports the interpreter it found |
 | Test suite cross-check of exported STL | `numpy-stl` | BSD-3-Clause | no | that test is skipped |

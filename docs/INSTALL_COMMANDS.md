@@ -40,6 +40,17 @@ On macOS and Linux use `export` instead of `set`. `SOLIDCRAFT_HOME` pointing at 
 
 ---
 
+### Prerequisite: Blender (only if you want that half)
+
+The thirty Blender skills need two things, both from the Blender ecosystem and neither bundled here:
+
+1. **A local Blender** — <https://www.blender.org/download/> (4.x is fine)
+2. **A Blender MCP server**, exposing Blender as the `mcp__blender__*` or `mcp__blender_official__*` tool set
+
+With either missing, the Blender skills say what is missing rather than describing a render they did not make. The CAD half is unaffected — `run.py` never touches Blender.
+
+---
+
 ## Method 2: install with commands
 
 **Claude Code** — from your shell, marketplace and install in one step:
@@ -51,7 +62,7 @@ claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPh
 **Claude Code** — from inside a session, add the marketplace pinned to the release tag:
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
 ```
 
 Then install the entry it lists:
@@ -63,7 +74,7 @@ Then install the entry it lists:
 **Codex** — register the URL as a Git marketplace; `--ref` pins the release tag, and an SSH URL or a local path works in place of the HTTPS one:
 
 ```bash
-codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.0.0
+codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.1.0
 ```
 
 ```bash
@@ -73,7 +84,7 @@ codex plugin add 3d-fabric@3d-fabric-marketplace
 **dsh (DeepSeek Harness)** — dsh installs plugins as npm packages, so the repository carries a `package.json` and a `cordis.patch.yml` beside the Claude Code manifests, and `index.js` registers the skill with dsh's skill registry:
 
 ```bash
-dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.0.0
+dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.0
 ```
 
 dsh refuses any package whose `package.json` lacks `dsh.bundle.patch` — that is the *"这个包没有声明组合包"* refusal (`reasonNotBundle`). Upgrading means uninstalling first; dsh does not replace an installed version in place.
@@ -81,7 +92,7 @@ dsh refuses any package whose `package.json` lacks `dsh.bundle.patch` — that i
 **CodeBuddy** — the same shape as Claude Code:
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
 ```
 
 ```text
@@ -155,7 +166,7 @@ Or copy the skill together with what it imports into a skill directory:
 python install.py --skill-dir ~/.claude/skills/3d-fabric
 ```
 
-`--skill-dir` copies `run.py`, `scripts/` and `references/` along with the skill. Commands inside it are written as `python "${CLAUDE_PLUGIN_ROOT:-.}/run.py"`, which falls back to the skill directory when the plugin variable is absent.
+`--skill-dir` copies `run.py`, `scripts/` and `references/` along with the skill, but it installs the CAD skill only; the thirty Blender skills travel through the plugin channel, where their per-skill `allowed-tools` are honoured. Commands inside it are written as `python "${CLAUDE_PLUGIN_ROOT:-.}/run.py"`, which falls back to the skill directory when the plugin variable is absent.
 
 ---
 

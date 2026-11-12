@@ -59,9 +59,11 @@ SKILL_FILES = [
     ("LICENSE", "LICENSE"),
 ]
 
-# Whole trees copied beside the skill: SKILL.md points into references/.
+# Whole trees copied beside the skill: SKILL.md points into references/,
+# and the bundled third-party licence text must travel with the code.
 SKILL_TREES = [
     ("references", "references"),
+    ("licenses", "licenses"),
 ]
 
 REQUIRED_MODULES = ("trimesh", "numpy", "scipy")

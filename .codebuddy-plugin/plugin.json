@@ -1,7 +1,7 @@
 {
   "name": "3d-fabric",
-  "version": "1.0.0",
-  "description": "The complete 3D modelling and 3D-printing toolchain in one plugin: natural-language part building through the local SolidCraft CLI, plus reading, editing, measuring and previewing a design, and print-quality mesh inspection and repair.",
+  "version": "1.1.0",
+  "description": "The complete 3D toolchain in one plugin: printable CAD by natural language through the local SolidCraft CLI (build, edit, measure, preview, inspect, repair), plus thirty Blender skills for organic modelling, materials, lighting, cameras, rendering and animation. The Blender half is the MIT-licensed cc-blender-skill suite by RobLe3 (github.com/RobLe3/cc-blender-skill), bundled verbatim.",
   "author": {
     "name": "Jiaming Shi"
   }

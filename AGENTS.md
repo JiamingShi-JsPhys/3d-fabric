@@ -1,12 +1,14 @@
-# 3d-fabric — agent operating rules (v1.0.0)
+# 3d-fabric — agent operating rules (v1.1.0)
 
-3d-fabric is the **whole 3D toolchain for this machine in one plugin**: build a
-part by natural language through SolidCraft, read and edit a design someone
-already made, measure it, render it, check any mesh for printing, and repair
-meshes that came from elsewhere. It does not generate geometry itself and it
-speaks to no CAD application other than SolidCraft.
+3d-fabric is the **whole 3D toolchain for this machine in one plugin**, in two
+halves. The **CAD half** builds a part by natural language through SolidCraft,
+reads and edits a design someone already made, measures it, renders it, checks
+any mesh for printing, and repairs meshes that came from elsewhere. The
+**Blender half** ships thirty skills for organic modelling, materials,
+lighting, cameras, rendering, UV and animation.
 
-It does not do organic modelling, sculpting, materials, lighting or animation.
+Pick the half by the job: a printable, dimensioned part is CAD; something with
+a silhouette, a surface look or a moving shot is Blender.
 
 ## Install as one plugin
 
@@ -15,6 +17,7 @@ Install this repository as a **single plugin**. Do NOT copy `run.py` on its own
 lives at `skills/3d-fabric/SKILL.md`. Use the marketplace, or let
 `install.py --skill-dir` perform the copy.
 
+`skills/` holds thirty-one skills: the CAD skill and the thirty Blender ones.
 Hosts that read a **rule file** instead of a plugin — Cursor, Windsurf, Cline,
 Continue, Roo Code, GitHub Copilot — get this same contract through
 `python install.py --project <dir>`; `python install.py --list` shows every
@@ -56,6 +59,35 @@ python run.py --action repair  --input part.stl --output fixed.stl
    `needs_repair` / `blocked`.
 7. **repair** — weld, drop bad faces, fill single-face and ordered-loop holes,
    fix winding and inversion. Only for meshes that came from elsewhere.
+
+## The Blender half (30 skills)
+
+`skills/text-to-blender` is the router for the other twenty-nine:
+
+- production: `blender-modeling`, `blender-materials`, `blender-lighting`,
+  `blender-cameras`, `blender-rendering`, `blender-animation`,
+  `blender-export`, `blender-uv-texturing`, `blender-pro-workflow`,
+  `blender-skill-harmonizer`
+- HUD and animation QA: `orbital-hud-motion`, `animation-quality-gate`
+- reference reconstruction: `reference-to-3d`, `wireframe-to-3d`,
+  `mascot-logo-reconstruction`, `orthographic-registration`,
+  `multiview-constraint-solver`, `multiview-fit-loop`, `fit-repair-optimizer`,
+  `landmark-fit-repair`, `reference-analysis-validator`,
+  `reference-look-calibration`, `source-part-segmentation`, `contour-to-mesh`,
+  `atlas-uv-fitting`, `closed-surface-uv-coverage`,
+  `texture-driven-mesh-fitting`, `texture-state-animation`,
+  `quality-refinement-autoloop`
+
+- They need a local Blender **and** a Blender MCP server
+  (`mcp__blender__*` or `mcp__blender_official__*`). If neither tool set is
+  present, say Blender is missing — never describe a render you did not make.
+- Before the first Blender call, read
+  `skills/text-to-blender/references/mcp-backends.md`; keep one backend for the
+  whole task.
+- They are upstream text (MIT, © 2026 RobLe3). Never edit them. Routing and
+  local advice belong in `skills/3d-fabric/SKILL.md` and this file.
+- The Blender half and the CAD half do not share state: a Blender mesh reaches
+  the printer only through `run.py --action inspect/repair` on an exported STL.
 
 ## Where the command reference lives
 

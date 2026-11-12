@@ -34,6 +34,35 @@ numpy-stl
     Used in the test suite only, as an independent STL reader that proves
     exported files are standard STL.
 
+cc-blender-skill (thirteen agent skills bundled in skills/)
+------------------------------------------------------------
+Project:  https://github.com/RobLe3/cc-blender-skill
+Licence:  MIT
+Copyright (c) 2026 RobLe3
+Full text: licenses/cc-blender-skill-LICENSE.txt
+
+The following thirteen skills are reproduced verbatim from that project's
+plugin/skills/ directory at branch main, commit a2634b5
+(fetched 2026-11-06):
+
+    text-to-blender           blender-animation       blender-cameras
+    blender-export            blender-lighting        blender-materials
+    blender-modeling          blender-pro-workflow    blender-rendering
+    blender-skill-harmonizer  blender-uv-texturing    orbital-hud-motion
+    animation-quality-gate
+
+They are unmodified (LF line endings); per-file SHA-256 values are in
+skills/vendored.json. They remain RobLe3's work under the MIT licence and are
+not covered by 3d-fabric's own copyright. MIT's condition — that the copyright
+and permission notice accompany copies — is met by
+licenses/cc-blender-skill-LICENSE.txt, which ships in this repository and in
+every installed copy.
+
+These skills do not contain Blender source code. They drive a user-installed
+Blender through an MCP server (mcp__blender__* or mcp__blender_official__*),
+and Blender itself is not bundled or redistributed here. Blender is a trademark
+of the Blender Foundation; the name appears only to describe compatibility.
+
 SolidCraft (external application; its agent reference documents are bundled)
 -------------------------------------------------------------------------
 Project:  https://github.com/tangency-labs/solidcraft

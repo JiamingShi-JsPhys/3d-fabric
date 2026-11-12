@@ -4,6 +4,105 @@ All notable changes to 3d-fabric are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-11-06
+
+The Blender half. 3d-fabric stops being only a CAD front end: it now ships the
+thirty Blender skills that cover organic modelling, materials, lighting,
+cameras, rendering, UV texturing, animation and animation QA, so one plugin
+covers both kinds of 3D work.
+
+### Added
+
+- **Thirty skills in `skills/`** — the complete upstream set — verbatim from
+  [RobLe3/cc-blender-skill](https://github.com/RobLe3/cc-blender-skill)
+  (`plugin/skills/`, branch `main`, fetched 2026-11-06, MIT):
+  - production (11): `text-to-blender` (the router), `blender-modeling`,
+    `blender-materials`, `blender-lighting`, `blender-cameras`,
+    `blender-rendering`, `blender-animation`, `blender-export`,
+    `blender-uv-texturing`, `blender-pro-workflow`, `blender-skill-harmonizer`
+  - HUD and animation QA (2): `orbital-hud-motion`, `animation-quality-gate`
+  - reference reconstruction (17): `reference-to-3d`, `wireframe-to-3d`,
+    `mascot-logo-reconstruction`, `orthographic-registration`,
+    `multiview-constraint-solver`, `multiview-fit-loop`, `fit-repair-optimizer`,
+    `landmark-fit-repair`, `reference-analysis-validator`,
+    `reference-look-calibration`, `source-part-segmentation`,
+    `contour-to-mesh`, `atlas-uv-fitting`, `closed-surface-uv-coverage`,
+    `texture-driven-mesh-fitting`, `texture-state-animation`,
+    `quality-refinement-autoloop`
+- Because the reconstruction family now sits beside `text-to-blender` inside
+  the plugin, their `../text-to-blender/references/mcp-backends.md` links
+  resolve within the bundle; the standalone copies and the shared-folder
+  workaround they needed can go.
+- `skills/vendored.json` — upstream URL, fetch date, licence and a SHA-256 for
+  each of the 131 bundled files, so drift is detectable.
+- `licenses/cc-blender-skill-LICENSE.txt` — upstream MIT text, copyright
+  © 2026 RobLe3, shipped with the skills as MIT requires.
+- A routing table in `skills/3d-fabric/SKILL.md` and `AGENTS.md`: printable or
+  parameterised work goes through `run.py`; silhouette, surface or motion work
+  goes to the Blender skills. A Blender mesh reaches the printer only through
+  `run.py --action inspect` / `repair` on an exported STL.
+
+### Added — the platform half
+
+One repository, ten hosts. The layout follows the pattern `chelate-shell` uses,
+so both repositories install the same way.
+
+- **Plugin manifests for the three other hosts that read one.**
+  `.codex-plugin/` and `.codebuddy-plugin/` each ship `plugin.json` plus
+  `marketplace.json`; `.dsh-plugin/` ships a `plugin.json` and a CJS entry that
+  delegates to the root `index.js` rather than keeping a second copy that could
+  drift. `author` is an object in all four manifests, none carries a string
+  `skills` field or an `icon` — the shapes that make these hosts drop a plugin
+  without printing an error.
+- **A rule file for every host that reads one instead of a plugin.**
+  `.cursor/rules/3d-fabric.mdc` (`alwaysApply`), `.continue/rules/3d-fabric.md`
+  (`alwaysApply`), `.windsurf/rules/3d-fabric.md` (`trigger: always_on`),
+  `.roo/rules/3d-fabric.md`, `.clinerules/3d-fabric.md` and
+  `.github/copilot-instructions.md`. Every one is `AGENTS.md` verbatim behind
+  that host's header, so one edit to the contract reaches all six.
+- **`install.py --project DIR` / `--global` / `--list` / `--only`** — the one
+  command no vendor ships, because no host's installer understands another
+  host's rule file. `--global` covers the user-scoped `AGENTS.md` for opencode
+  and Codex, skipping a host this machine does not have; Claude Code is
+  excluded there on purpose, since it has a plugin channel and
+  `~/.claude/CLAUDE.md` belongs to the user. An identical file reports
+  `unchanged`; a differing one is left alone unless `--force` is passed.
+- `package.json` declares the version it ships, so the dsh package and the
+  Claude Code manifests agree.
+
+### Changed
+
+- Version 1.1.0 across `plugin.json`, `marketplace.json`, `manifest.json`,
+  `pyproject.toml` and the skill frontmatter; `manifest.json` also records
+  `bundled_skills` and a `blender_requirement` block.
+- The `3d-fabric` skill description now says it is **not** for organic or
+  artistic modelling, so it stops competing with the Blender triggers.
+- READMEs describe the two halves, the Blender requirements, the licence
+  boundary and every host's install command; `THIRD_PARTY_LICENSES.txt` gains
+  the cc-blender-skill entry. Marketplace commands pin `#v1.1.0`.
+- `install.py --skill-dir` is unchanged: it installs the CAD skill and its
+  references. The Blender skills are available through the plugin channel,
+  where their per-skill `allowed-tools` are honoured.
+
+### Unchanged
+
+- `run.py` and `scripts/` are byte-identical to 1.0.0: same seven actions, same
+  gate schema, same exit codes. A machine with no Blender behaves exactly as
+  before.
+
+### Tests
+
+- 124 tests. `tests/test_bundled_skills.py` (8) covers the Blender half — all
+  thirty skills present, frontmatter name matching the directory, every skill
+  bound to a Blender MCP tool set, cross-skill relative links resolving inside
+  the bundle, hashes matching `skills/vendored.json`, the MIT text present, and
+  the CAD skill routing to the Blender half. `tests/test_dsh_bundle.py` (5)
+  and the new `tests/test_plugin_manifests.py` (11) cover the platform half —
+  the `dsh.bundle.patch` declaration, the CJS entry listing all thirty-one
+  skills, version agreement across the four manifests and `package.json`, the
+  two fields that get a plugin silently ignored, and every rule file still
+  equalling `AGENTS.md`.
+
 ## [1.0.0] — 2026-11-08
 
 First release. The complete 3D modelling and 3D-printing toolchain for one

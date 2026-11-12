@@ -1,6 +1,6 @@
 ---
 name: 3d-fabric
-version: 1.0.0
+version: 1.1.0
 description: >
   The complete 3D modelling and 3D-printing toolchain for this machine: drive
   the installed SolidCraft CAD application by natural language, edit an
@@ -9,8 +9,10 @@ description: >
   3D model, a printable part, parametric CAD, an enclosure, bracket, plate,
   flange or fixture ("3D 打印", "参数化建模", "建一个实体模型", "做个外壳/支架"),
   or asks to open, change, measure, preview, check or repair a 3D model.
+  Not for organic or artistic modelling, materials, lighting, rendering or
+  animation — the thirty bundled Blender skills cover that half.
 metadata:
-  version: 1.0.0
+  version: 1.1.0
   author: Jiaming Shi
   license: MIT
   entry_point: run.py
@@ -30,7 +32,19 @@ metadata:
 | 确认能不能打印 | `inspect`（`model` 会自动跑） |
 | 修一个别人给的破模型 | `repair` |
 
-它**不做**有机造型/雕刻、材质与灯光渲染、UV 与动画——那些属于 Blender 一类工具。
+从 1.1.0 起本插件分两半，同一台机器上各管一段：
+
+| 你想要的 | 用哪一半 |
+|---|---|
+| 能打印的机械件、参数化 CAD、改已有设计、测量、预览、质检、修复 | 本技能：`run.py` 的七个动作，走 SolidCraft |
+| 有机/艺术造型、材质、灯光、相机、渲染、动画、按参考图重建 | 随附的 30 个 Blender 技能：`text-to-blender`、`blender-*`、`orbital-hud-motion`、`animation-quality-gate` |
+
+Blender 那一半需要本机装有 Blender 并配置 Blender MCP（`mcp__blender__*` 或
+`mcp__blender_official__*`）。工具不在时不要假装能建模——直接说明缺 Blender
+和 MCP，让用户装好再来。以插件方式安装时这 30 个技能随附在 `skills/` 下；若当前
+只是单独安装的技能目录、旁边没有它们，就说明这台机器只装了 CAD 一半。
+两半的共同点是"做出来还要能验"：CAD 靠 gate，Blender 靠渲染出来的图。
+
 除此之外，参数化实体 CAD 的建模、修改、测量、预览、打印验证与修复，这里都有。
 
 本插件不实现实体核。SolidCraft 需用户自行安装（开源的参数化 CAD，
@@ -51,7 +65,9 @@ metadata:
 - “这个模型多大/多重”“出张图看看”
 - “检查这个 STL 能不能打印”“修一下这个模型的破洞”
 
-不要用本插件：切片与 G-code、支撑、壁厚/悬垂分析、有机造型、贴图与动画。
+不要把 CAD 流程用在：切片与 G-code、支撑、壁厚/悬垂分析——本插件不做切片。
+有机造型、雕刻、材质、灯光、渲染与动画交给随附的 Blender 技能，不要用
+`solid.extrude` 硬凑一个"艺术品"。
 
 ## 第 0 步：先探测（每次都要）
 

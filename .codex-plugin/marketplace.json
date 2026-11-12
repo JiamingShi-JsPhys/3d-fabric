@@ -1,12 +1,12 @@
 {
   "name": "3d-fabric-marketplace",
-  "description": "Marketplace for the 3d-fabric plugin: the complete 3D modelling and 3D-printing toolchain, from a natural-language part through SolidCraft to a print-checked mesh.",
+  "description": "Marketplace for the 3d-fabric plugin: the whole 3D toolchain, from a printable part through SolidCraft to a print-checked mesh, and from a Blender scene to a rendered, validated animation.",
   "plugins": [
     {
       "name": "3d-fabric",
       "source": "./",
-      "version": "1.0.0",
-      "description": "The complete 3D modelling and 3D-printing toolchain in one plugin: natural-language part building through the local SolidCraft CLI, plus reading, editing, measuring and previewing a design, and print-quality mesh inspection and repair."
+      "version": "1.1.0",
+      "description": "The complete 3D toolchain in one plugin: printable CAD by natural language through the local SolidCraft CLI (build, edit, measure, preview, inspect, repair), plus thirty Blender skills for organic modelling, materials, lighting, cameras, rendering and animation. The Blender half is the MIT-licensed cc-blender-skill suite by RobLe3 (github.com/RobLe3/cc-blender-skill), bundled verbatim."
     }
   ]
 }

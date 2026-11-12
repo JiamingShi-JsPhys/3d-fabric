@@ -40,6 +40,17 @@ macOS / Linux 把 `set` 换成 `export`。也可以用 `SOLIDCRAFT_HOME` 指向�
 
 ---
 
+### 前置：Blender（想用那一半才装）
+
+三十个 Blender 技能需要两样东西，都来自 Blender 生态，本插件不带：
+
+1. **本机 Blender** —— <https://www.blender.org/download/>（4.x 即可）
+2. **一个 Blender MCP 服务**，把 Blender 暴露成 `mcp__blender__*` 或 `mcp__blender_official__*` 工具组
+
+缺任何一样，Blender 技能会直接说缺什么，不会假装渲染过；CAD 那一半完全不受影响，`run.py` 一行都不碰 Blender。
+
+---
+
 ## 方法二：用命令安装
 
 **Claude Code** —— 在终端执行，注册市场与安装一步完成：
@@ -51,7 +62,7 @@ claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPh
 **Claude Code** —— 在会话内执行，先按发布 tag 添加市场：
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
 ```
 
 再安装它列出的条目：
@@ -63,7 +74,7 @@ claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPh
 **Codex** —— 把 URL 注册为 Git 市场；`--ref` 锁定发布 tag，HTTPS 换成 SSH 或本地路径同样可用：
 
 ```bash
-codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.0.0
+codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.1.0
 ```
 
 ```bash
@@ -73,7 +84,7 @@ codex plugin add 3d-fabric@3d-fabric-marketplace
 **dsh（DeepSeek Harness）** —— dsh 把插件当 npm 包装，仓库里因此还带 `package.json` 与 `cordis.patch.yml`，由 `index.js` 把技能注册进 dsh 的技能表：
 
 ```bash
-dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.0.0
+dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.0
 ```
 
 `package.json` 里没有 `dsh.bundle.patch` 的包 dsh 一律拒收——就是「这个包没有声明组合包」（内部原因码 `reasonNotBundle`）。升级要先卸载：dsh 不会原地替换已安装的版本。
@@ -81,7 +92,7 @@ dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.0.0
 **CodeBuddy** —— 与 Claude Code 同一套命令：
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.0.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
 ```
 
 ```text
@@ -155,7 +166,7 @@ python run.py --action probe
 python install.py --skill-dir ~/.claude/skills/3d-fabric
 ```
 
-`--skill-dir` 会一起搬 `run.py`、`scripts/` 与 `references/`；命令在技能里写作 `python "${CLAUDE_PLUGIN_ROOT:-.}/run.py"`，没装成插件时会回退到技能目录本身。
+`--skill-dir` 会一起搬 `run.py`、`scripts/` 与 `references/`——但它只装 CAD 那一个技能；三十个 Blender 技能走插件渠道，那里的 `allowed-tools` 才会被尊重。命令在技能里写作 `python "${CLAUDE_PLUGIN_ROOT:-.}/run.py"`，没装成插件时会回退到技能目录本身。
 
 ---
 

@@ -2,3 +2,5 @@
 *.stl binary
 *.step binary
 *.3mf binary
+*.webp binary
+*.png binary
