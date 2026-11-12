@@ -17,7 +17,7 @@ and the host agent never triggers on them.
 | Path | `skills/<name>/` for each of the four names below |
 | Branch | `main` |
 | Fetched | 2026-11-06 |
-| Modification | none — byte-identical to the upstream files (LF endings) |
+| Modification | upstream's `scripts/tests/` is not copied; every other file is byte-identical (LF endings) |
 | Licence of this copy | MIT, per upstream's `MIT OR Apache-2.0` dual licence |
 
 The local copies in `~/.claude/skills/solidcraft-*` (if present) are the same
@@ -51,13 +51,18 @@ is covered by 3d-fabric's copyright; it remains SolidCraft contributors' work.
 | `skills/solidcraft-checking/scripts/compare_step.py` | `ef4d3dcb1993131ad1a72cdc5a013eb17b131ecce8337d23e0f76f2ded74e82d` |
 | `skills/solidcraft-checking/scripts/run.py` | `40ac7535bbe1058e7ab46764fc8622c9c7ab10fc087b6d3678f349921c170c0e` |
 | `skills/solidcraft-checking/scripts/scb.py` | `e9e64305bf44a3fe0c93bb74457f6b4118b2c6dc3383adddd4addeafb85fcb61` |
-| `skills/solidcraft-checking/scripts/tests/test_compare_step.py` | `6e5f4eb0a179570eabb8fdb1060b6ae62ced99a4b2621eda45cfae15dd97af27` |
-| `skills/solidcraft-checking/scripts/tests/test_facts.py` | `0cfb2f56f7ee1ce19f38af09f0fd87e50c14a0be2fb97d6f40621423db79820b` |
-| `skills/solidcraft-checking/scripts/tests/test_run.py` | `0e0e1e3753af5f725ab15f70396935f27649f70116f3a16a9cdaaf55dd67a4e8` |
-| `skills/solidcraft-checking/scripts/tests/test_scb.py` | `f15826c8b8abaa7f1dfece4cca3b1f416523e29aa9d09f1d38a864a75dc17f26` |
 | `skills/solidcraft-checking/templates/test_design.py` | `9a01f3970d596977853c178a751abcf2490d28df7c16217421595300a75cfe4f` |
 | `LICENSE-MIT` | `1a26c1e94401d5d221896c74dd1c58d227edc64516da95aaac6f675567c8af63` |
 | `NOTICE` | `09464b0c8f495c9e3c80d93fccf667056d1c2c306445d66101e4bed49494c54d` |
+
+## What is not copied
+
+Upstream's own test suite — `solidcraft-checking/scripts/tests/`, four files, 829 lines — is
+left out. It exercises SolidCraft's helper scripts against a live `solidcraft-cli` with
+`build123d` installed; nothing in 3d-fabric runs it, and 3d-fabric's own suite never
+collects it. The paragraph in `solidcraft-checking/SKILL.md` that tells you to run
+`$SKILL/scripts/tests` after a SolidCraft upgrade therefore does not apply to this copy;
+everything else in that file is upstream text unchanged.
 
 ## What each one is for
 

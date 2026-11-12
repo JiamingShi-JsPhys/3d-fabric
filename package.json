@@ -13,6 +13,27 @@
     "url": "git+https://github.com/JiamingShi-JsPhys/3d-fabric.git"
   },
   "main": "index.js",
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    ".dsh-plugin/",
+    "run.py",
+    "install.py",
+    "scripts/",
+    "skills/",
+    "references/",
+    "examples/",
+    "docs/",
+    "licenses/",
+    "AGENTS.md",
+    "manifest.json",
+    "requirements.txt",
+    "README.md",
+    "README_zh.md",
+    "CHANGELOG.md",
+    "THIRD_PARTY_LICENSES.txt",
+    "LICENSE"
+  ],
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"

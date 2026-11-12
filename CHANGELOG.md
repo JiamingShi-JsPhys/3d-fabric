@@ -6,10 +6,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [1.1.1] — 2026-11-12
 
-Three correctness fixes in the printability gate and in the transform helper,
-all found by an external review, all reproducible on 1.1.0. `run.py` and
-`scripts/` change only where noted; the seven actions, the gate schema and the
-exit codes are untouched.
+A correctness release, then a documentation one. Three bugs in `scripts/engine.py`,
+all reproducible on 1.1.0, all found by an external review; `run.py` and
+`scripts/` change only where noted, and the seven actions, the gate schema and
+the exit codes are untouched. The documentation was rebuilt around web-forager's
+layout, with the long material moved into `docs/` and the test suite dropped from
+the package.
 
 ### Fixed
 
@@ -45,16 +47,55 @@ exit codes are untouched.
   the second, so two runs finishing in the same second produced one file and
   the later one won silently.
 
+### Documentation
+
+- **Both READMEs follow web-forager's layout** — one sentence and three audience
+  bullets at the top, a grouped table of contents, "Why" as three bullets
+  rather than five paragraphs, Method 1 = let your AI install it, and a quick
+  start in two tracks: from the chat, and from a terminal where neither
+  SolidCraft nor Blender is needed. 344 lines became 303, and what stayed is
+  what a reader needs to get a verdict — the SolidCraft download table, the real
+  `inspect` / `repair` transcript, and the seven-action table.
+- **`docs/` holds what is long.** `REFERENCE.md` (+ zh) carries every flag, the
+  gate record with a worked example, the exit codes, the dependency map, the
+  repository layout and the test suite; `BLENDER_SKILLS.md` the 30 skills, one
+  table per family; `THIRD_PARTY.md` the vendored SolidCraft references and the
+  MIT boundary; `ACKNOWLEDGEMENTS.md` who reported what.
+- **Known limitations split** into *Read before use* and *Edge cases*, so the
+  five that change a decision come first.
+- **The "an AI can scatter the files" warning is gone.** It described a failure
+  mode that `install.py` does not have, and both installation methods already
+  say to install the plugin whole.
+
+### Packaging
+
+- **`package.json` `files` lists what ships.** `tests/` stays in the repository
+  and out of the package; `npm pack` produces 180 files and none of them is a
+  test. A new test pins that list, so a renamed folder cannot silently drop the
+  CLI from the package.
+- **`.github/workflows/ci.yml`** runs the suite on Python 3.10 and 3.12 on
+  Linux and 3.12 on Windows, plus a `run.py --help` smoke test.
+
+### Removed
+
+- **Upstream's own test suite is no longer vendored.**
+  `references/solidcraft/solidcraft-checking/scripts/tests/` — four files, 829
+  lines — was copied along with the reference documents, but it tests
+  SolidCraft's helper scripts against a live CLI with `build123d` installed, and
+  nothing here runs it. The provenance table lists what remains and the note
+  under it says why that folder is missing.
+
 ### Tests
 
-137 tests, thirteen of them new: the pivot is pinned for the default and for an
+138 tests, fourteen of them new: the pivot is pinned for the default and for an
 explicit pivot, one reversed face blocks the pass, a watertight non-solid is
 never printable, `repair` makes a reversed face printable again, back-to-back
-CLI runs write two gates, scratch sidecars differ per call, and six multi-body
-cases — two valid bodies, a small inverted body behind a large one, an inverted
-body that is the larger one, several valid bodies at different places, a hollow
-part whose inner shell must not be read as inverted, and `repair` turning an
-inverted body the right way out.
+CLI runs write two gates, scratch sidecars differ per call, the package lists
+exactly what ships, and six multi-body cases — two valid bodies, a small
+inverted body behind a large one, an inverted body that is the larger one,
+several valid bodies at different places, a hollow part whose inner shell must
+not be read as inverted, and `repair` turning an inverted body the right way
+out.
 
 ## [1.1.0] — 2026-11-06
 

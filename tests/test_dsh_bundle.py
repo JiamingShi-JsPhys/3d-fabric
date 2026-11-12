@@ -103,3 +103,21 @@ provider.list().then(async (candidates) => {
     assert result["candidates"] == len(expected)
     assert result["content"] > 0
     assert pathlib.Path(result["base"]) == (PLUGIN_ROOT / "skills").resolve()
+
+
+def test_the_package_ships_the_runtime_and_not_the_test_suite():
+    """``files`` decides what an npm / dsh install actually receives.
+
+    The 137 tests and the vendored upstream suite are development material: a
+    user installing the plugin should not download them. Every entry must also
+    exist on disk, so a renamed folder cannot silently drop the CLI from the
+    package while the manifest still claims to ship it.
+    """
+    files = read_package()["files"]
+    assert not any(entry.startswith("tests") for entry in files), "the suite must not ship"
+
+    missing = [entry for entry in files if not (PLUGIN_ROOT / entry.rstrip("/")).exists()]
+    assert not missing, f"listed but absent: {missing}"
+
+    for required in ("run.py", "scripts/", "skills/", "references/", "docs/"):
+        assert required in files, f"{required} must ship"

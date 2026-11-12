@@ -1,103 +1,196 @@
 # 3d-fabric
 
-> **A CAD front end and a printability gate for a local SolidCraft installation, with 30 Blender skills included.**
->
-> You do not need to write the SolidCraft command list yourself. Seven CAD actions ship with the repository and run against the SolidCraft you already have: `model` writes a `{"commands": [...]}` script, runs it headlessly and exports STL / STEP / 3MF / OBJ; `script` recovers that command list from a `.sc` or `.step` that arrived without one; `measure` reads volume, mass and topology out of the B-rep; `snapshot` renders a PNG; `inspect` scores a mesh for printability; `repair` fixes the defects it can. Thirty Blender skills come bundled verbatim for the other kind of 3D work — organic and hard-surface modelling, materials, lighting, cameras, rendering, UV texturing and animation. All of it is part of the install and runs as shipped.
->
-> `scripts/solidcraft.py` is the only file that knows the SolidCraft CLI: it probes the install, accepts it only after `--version` answers, runs the script, and refuses to report success unless the promised export landed on disk. `scripts/engine.py` is the only file that knows geometry, and it delegates every operation to `trimesh` (MIT). `run.py` orchestrates the seven actions and nothing else.
+**A print quality gate for 3D modeling and manufacturing workflows, with 30 Blender skills included.**
+
+You do not need to prepare a validation environment yourself. One gate sits behind every path a mesh takes: a natural-language request through the local SolidCraft CLI, a design someone else sent you, an STL off a scanner, or a Blender export. Seven CAD actions share one record format and one set of exit codes, and thirty Blender skills cover the kind of 3D work that is not a dimensioned part.
+
+- **For agents:** a typed gate for every action, `--json` byte-identical to the file on disk, and an explicit `UNVERIFIED` when SolidCraft is missing instead of a silent pass.
+- **For people:** one command per task, a verdict in three words, and a `repair` that reports what it changed.
+- **For a printer:** watertightness, winding, non-manifold edges and every closed shell checked on its own, so an inside-out part cannot hide behind a correct one.
 
 **English** · [简体中文](README_zh.md)
 
-**Version:** 1.1.1 | **CAD actions:** 7 | **Bundled Blender skills:** 30 | **Verified against:** SolidCraft 0.30.1
+**Version:** 1.1.1 | **License:** MIT | **Python:** 3.10+ | **SolidCraft:** verified against 0.30.1
 
-**Install [SolidCraft](https://solidcraft.io/download) first, then this plugin.** The Blender half also needs a local Blender and a Blender MCP server. Both steps, every platform's command and the self-check are under [Installation](#installation).
-
----
-
-## Security & Open Source Statement
-
-> **Disclaimer**: This repository is a community plugin written to automate a 3D-modelling workflow. It is not affiliated with, sponsored by, or endorsed by the SolidCraft project. It contains no SolidCraft source code and bundles none of its binaries or assets; SolidCraft must be installed separately by the user. The only SolidCraft material reproduced here is the project's four agent reference documents, copied verbatim under its MIT licence with the copyright notice and NOTICE intact — see [Bundled third-party material](#bundled-third-party-material).
->
-> The plugin never sends your model anywhere. It makes no network requests, runs no `eval`, and its only subprocess is the locally installed `solidcraft-cli` that you already have.
+> A community plugin, not affiliated with the SolidCraft project. Read the [security statement](#security--open-source-statement) before use.
 
 ---
 
-## Why 3d-fabric?
+## Contents
 
-An agent can write a parametric CAD script. It cannot tell whether the result is printable — and a printable result is not the same thing as a built one. SolidCraft reports `ok` for a cut that missed the part, exit code 0 does not imply that a file was written, and a slicer rejects a mesh that closes nowhere. The tools that answer those questions are usually separate: a modelling skill, an audit skill, a viewer, and a patching script for the broken STL someone emailed you. Each covers a slice, and none of them report in the same shape, so an agent has to reconcile several verdicts and a person has to remember which one to trust.
+**Getting started**
+
+- [Why 3d-fabric](#why-3d-fabric)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+
+**How it works**
+
+- [The Blender half](#the-blender-half)
+- [How a run flows](#how-a-run-flows)
+- [Full reference](#full-reference)
+- [Security & Open Source Statement](#security--open-source-statement)
+- [Bundled third-party material](#bundled-third-party-material)
+
+**The rest**
+
+- [Known limitations](#known-limitations)
+- [Report issues](#report-issues)
+- [Acknowledgements](#acknowledgements)
+- [Trademarks](#trademarks)
+- [License](#license)
+
+---
+
+## Why 3d-fabric
+
+An agent can write a parametric CAD script. It cannot tell whether the result is printable — and a printable result is not the same thing as a built one. SolidCraft reports `ok` for a cut that missed the part, exit code 0 does not imply a file was written, and a slicer rejects a mesh that closes nowhere. The tools that answer those questions are usually separate: a modelling skill, an audit skill, a viewer, and a patching script for the broken STL someone emailed you.
 
 3d-fabric addresses this in two parts, and both are part of the same repository.
 
-**The bridge converts between the two languages.** The agent speaks natural language; SolidCraft speaks a JSON command list. `scripts/solidcraft.py` finds the CLI wherever it is installed (`--solidcraft`, `SOLIDCRAFT_CLI`, `SOLIDCRAFT_HOME`, `PATH`, or the vendor's default folders), verifies it with `--version` so a stale shim cannot pass, runs the script with `--out`, and checks that every promised file exists and is non-empty. The same bridge answers questions about a design someone else made: `script` turns a `.sc` back into a command list, `model --in` replays a patch against it, `measure` reads its volume, mass and topology out of the B-rep, and `snapshot` renders it to PNG. Exit code, stderr and the per-step results list all land in one report.
+- **The bridge converts between the two languages.** `scripts/solidcraft.py` finds the CLI wherever it is installed (`--solidcraft`, `SOLIDCRAFT_CLI`, `SOLIDCRAFT_HOME`, `PATH`, or the vendor's default folders), verifies it with `--version` so a stale shim cannot pass, runs the script with `--out`, and checks that every promised file exists and is non-empty. The same bridge answers questions about a design someone else made: `script` turns a `.sc` back into a command list, `model --in` replays a patch against it, `measure` reads its volume, mass and topology out of the B-rep, and `snapshot` renders it to PNG.
+- **The gate supplies the verdict the bridge cannot give itself.** `scripts/engine.py` measures what a slicer cares about — watertightness, winding consistency, normal orientation, non-manifold edges, boundary loops, degenerate faces, bounds and signed volume — and reduces them to `ready_to_print`, `needs_repair` or `blocked`. Every defect carries a code, a severity and a count. A model that fails is never reported as a success.
+- **The halves are separable on purpose.** `inspect` and `repair` do not require SolidCraft at all, so a mesh from a scanner, a download or another program stays checkable on a machine that has never installed a CAD application.
 
-**The gate supplies the verdict the bridge cannot give itself.** `scripts/engine.py` measures what a slicer cares about: watertightness, winding consistency, normal orientation, non-manifold edges, boundary loops and their count, degenerate faces, bounds and signed volume — every closed shell checked on its own, so a small inside-out part cannot hide behind a large correct one. The verdict is one of `ready_to_print`, `needs_repair` or `blocked`, and every defect carries a code, a severity and a count. A model that fails is never reported as a success.
-
-**Which half to use.** A dimensioned, printable part is CAD: `run.py` and SolidCraft. Something whose silhouette, surface or motion is the point is Blender: the bundled skills, which need a local Blender and a Blender MCP server. The two share one deliverable path — a Blender mesh reaches the printer through `run.py --action inspect` and `repair` on an exported STL.
-
-The halves are deliberately separable: `inspect` and `repair` do **not** require SolidCraft at all. Meshes that came from a scanner, a download or another program stay checkable on a machine that has never installed a CAD application.
+**Which half to use.** A dimensioned, printable part is CAD: `run.py` and SolidCraft. Something whose silhouette, surface or motion is the point is Blender: the bundled skills, which need a local Blender and a Blender MCP server. They share one deliverable path — a Blender mesh reaches the printer through `run.py --action inspect` and `repair` on an exported STL.
 
 ---
 
-## Bundled third-party material
+## Installation
 
-`references/solidcraft/` holds the four agent reference documents SolidCraft publishes for its own MCP server — **modeling**, **editing**, **checking** and **mechanisms** — together with the small helper scripts and design template that ship beside `solidcraft-checking`. The plugin's skill reads them for command shapes, plane axes, ids, reply sizes and the traps that make a build succeed with the wrong geometry.
+Install it as one plugin: `run.py`, `scripts/` and `skills/` share one engine, and a scattered copy fails.
 
-What this is, precisely:
+**Most people should use Method 1: let your AI install it.** Use Method 2 if your host has a plugin marketplace and you prefer to register the URL yourself; use Method 3 if you install onto several hosts at once.
 
-- **Verbatim.** Every file is byte-identical to upstream `github.com/tangency-labs/solidcraft` at branch `main` (fetched 2026-11-06). Nothing was rewritten, trimmed or merged. Per-file SHA-256 values are listed in [`references/solidcraft/README.md`](references/solidcraft/README.md).
-- **Reference text, not skills.** Their YAML frontmatter is part of the upstream file. Nothing in that folder is registered as a Claude Code skill, and `run.py` never executes any of it.
-- **MIT, with the notice kept.** SolidCraft is dual-licensed MIT OR Apache-2.0; this copy is taken under **MIT**. Copyright (c) 2026 SolidCraft contributors. [`references/solidcraft/LICENSE-MIT`](references/solidcraft/LICENSE-MIT) carries the full MIT text and [`NOTICE`](references/solidcraft/NOTICE) the upstream attribution. Those files remain the contributors' copyright and are not covered by 3d-fabric's own MIT grant; everything outside `references/solidcraft/` is Jiaming Shi's work under MIT.
-- **Optional.** Delete the folder and `run.py` still works — you only lose the built-in command reference and fall back to `solidcraft-cli commands`.
+### Before either: install SolidCraft
 
-The upstream text is written against SolidCraft's MCP tool names (`batch`, `execute`, `measure`). The command names inside `{"commands": [...]}` are the same ones; the MCP call names are not accepted by `solidcraft-cli run`. Where the two disagree, `solidcraft-cli commands` wins.
+3d-fabric ships no solid kernel; it drives the SolidCraft installation you already have. It is open source and free (MIT OR Apache-2.0) and has to be installed separately:
+
+| Platform | Download |
+| --- | --- |
+| Windows | [solidcraft-windows-x64.msi](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-windows-x64.msi) |
+| macOS | [solidcraft-macos-universal.dmg](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-macos-universal.dmg) (Apple silicon and Intel) |
+| Linux | [solidcraft-linux-x86_64.AppImage](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-linux-x86_64.AppImage), or `sudo snap install solidcraft` |
+
+- Everything else — ARM64 and 32-bit builds, portable zip, `.deb`, `.rpm`, Flatpak — is on the [downloads page](https://solidcraft.io/download).
+- The Windows downloads are not code-signed yet, so SmartScreen stops you once: **More info → Run anyway**.
+- The browser build at <https://solidcraft.io> needs no install, but it exposes no `solidcraft-cli`, so **this plugin cannot use it**.
+- `solidcraft-cli --version` printing a version line is enough; if it is not on `PATH`, point at it with `--solidcraft`, `SOLIDCRAFT_CLI` or `SOLIDCRAFT_HOME` — details in [docs/INSTALL_COMMANDS.md](docs/INSTALL_COMMANDS.md).
+
+> **Only four actions need it**: `model`, `script`, `measure` and `snapshot`. `inspect` and `repair` do not — a mesh from a scanner, a download or another CAD package stays checkable and repairable on a machine that has never installed SolidCraft.
+
+The thirty Blender skills need two more things, both from the Blender ecosystem and neither bundled here: a local [Blender](https://www.blender.org/download/) (4.x is fine) and a Blender MCP server exposing `mcp__blender__*` or `mcp__blender_official__*`. With either missing, those skills say what is missing rather than describing a render they did not make; `run.py` never touches Blender.
+
+### Method 1: let your AI install it
+
+```bash
+Please visit the GitHub repository `https://github.com/JiamingShi-JsPhys/3d-fabric`, clone it, and run `python install.py --check --deps`. If your host has a plugin system, install the whole set as a single plugin instead; that script covers the hosts that read rule files.
+```
+
+### Method 2: install from the plugin marketplace by URL
+
+Every host has a plugin marketplace of its own. Register this repository's Git URL and install the plugin it lists (registering twice is harmless — the second call reports it is already known).
+
+```bash
+https://github.com/JiamingShi-JsPhys/3d-fabric
+```
+
+An unpublished, renamed or moved repository changes nothing: the marketplace manifest uses `source: "./"`, a relative path, so the line above can be replaced with the folder you already have — installing never touches the network.
+
+### Method 3: install with commands
+
+Claude Code, Codex, dsh and CodeBuddy each take one plugin command; Cursor, Windsurf, Cline, Continue, Roo Code, GitHub Copilot and opencode read rule files, and one script writes them all. Every host's full command, every `install.py` flag and the optional capabilities are on one page: **[docs/INSTALL_COMMANDS.md](docs/INSTALL_COMMANDS.md)**.
+
+---
+
+## Quick start
+
+Two ways in. The first needs the plugin installed; the second needs nothing but this repository and a mesh.
+
+### From the chat (no shell, no path)
+
+Once installed as a plugin, the skill is one `/` away and triggers on the vocabulary of the task — "3D 打印", "参数化建模", "建一个实体模型", "做个外壳/支架" — so the first message can be the request itself:
+
+```text
+/3d-fabric  一块 120x70x8 的转接板，四角 R8 圆角，中间 40x20 通孔，四角 Ø4.5 孔距边 12mm
+```
+
+The agent probes, writes the SolidCraft script, calls `model`, reads the gate and reports the size, volume and verdict — or fixes the failing step and re-runs. When the design already exists, it calls `script` to read it, `measure` for the mass and volume, `snapshot` for a picture, and `model --in` to apply the change. The operating rules, including how to read `error: step N`, are in [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md).
+
+### From a terminal (no SolidCraft needed for this part)
+
+```bash
+python -m pip install -r requirements.txt
+python run.py --action inspect --input examples/damaged_part.stl
+```
+
+```text
+3d-fabric · inspect
+  file          examples/damaged_part.stl  (stl)
+  size          20.000, 20.000, 16.474  mm (assumed)
+  vertices      533   faces 1028   bodies 1
+  volume        n/a (open) mm^3
+  surface area  1005.864528 mm^2
+  topology      watertight[!!] winding[OK] outward[n/a] manifold[OK]
+  defects       holes 1   boundary edges 36   non-manifold edges 0   degenerate faces 0
+  verdict       needs_repair
+    - [error] not_watertight x36: surface is open; a slicer cannot tell inside from outside
+    - [error] holes x1: boundary loops that need filling
+```
+
+And the repair that makes it printable:
+
+```bash
+python run.py --action repair --input examples/damaged_part.stl --output repaired.stl
+```
+
+```text
+  before        watertight=False holes=1 non-manifold=0 verdict=needs_repair
+  after         watertight=True holes=0 non-manifold=0 verdict=ready_to_print
+  volume        3725.755796 mm^3
+  written       <cwd>/repaired.stl
+```
+
+Both transcripts are real output from this repository, on `examples/damaged_part.stl`.
+
+### The seven actions
+
+| Action | Does | Needs SolidCraft |
+| --- | --- | --- |
+| `probe` | Locate and verify the CLI | — (looks for it) |
+| `model` | Run a script, export, auto-inspect; `--in` edits an existing design | **yes** |
+| `script` | Turn a `.sc` / `.step` back into a `{"commands": [...]}` script | **yes** |
+| `measure` | Volume, mass, area, bounds, face types and parameters from the B-rep | **yes** |
+| `snapshot` | Render a PNG preview (views, sections, per-body styling) | **yes** |
+| `inspect` | Print-quality report on any mesh | no |
+| `repair` | Weld, fill holes, fix normals | no |
+
+```bash
+python run.py --action probe
+python run.py --action model    --input examples/bracket_request.json --quality fine
+python run.py --action script   --input bracket.sc --output build.json
+python run.py --action model    --script widen.json --in bracket.sc --output bracket_150.stl
+python run.py --action measure  --input bracket.sc
+python run.py --action snapshot --input bracket.sc --output bracket.png --view iso
+python run.py --action inspect  --input examples/damaged_part.stl
+python run.py --action repair   --input examples/damaged_part.stl --center
+```
+
+Everything runs headlessly for scripts and CI: with `--root`, the gate lands at `<root>/process/gates/3d-fabric_<timestamp>.json` and its contents are byte-identical to the `--json` line on stdout.
 
 ---
 
 ## The Blender half
 
-Thirty skills ship in `skills/`, copied verbatim from [RobLe3/cc-blender-skill](https://github.com/RobLe3/cc-blender-skill) at commit `a2634b5` (MIT). Each declares its Blender MCP tools in `allowed-tools`, so it activates only where a Blender MCP server is connected.
+Thirty skills ship in `skills/`, copied verbatim from [RobLe3/cc-blender-skill](https://github.com/RobLe3/cc-blender-skill) at commit `a2634b5` (MIT). They come in three families:
 
-| Skill | Covers |
-| --- | --- |
-| `text-to-blender` | the router: picks the right sub-skill, the MCP backend guide, assembly order |
-| `blender-modeling` | meshes, primitives, modifiers, bmesh, hard-surface work |
-| `blender-materials` | Principled BSDF, metallic switch, coat/sheen/SSS/transmission, procedural patterns |
-| `blender-lighting` | three-point setups, HDRI, colour temperature, light groups |
-| `blender-cameras` | focal length, depth of field, composition, animated cameras |
-| `blender-rendering` | Cycles vs EEVEE, samples, denoising, AgX/Filmic, output formats |
-| `blender-animation` | keyframes, F-curves, easing, shape keys, drivers, NLA |
-| `blender-export` | glTF/GLB, FBX, OBJ, USD, STL, collision hulls, normal baking |
-| `blender-uv-texturing` | unwrap, atlas mapping, projection, baking, decals |
-| `blender-pro-workflow` | the order to assemble a scene, critique protocol, time budgets |
-| `blender-skill-harmonizer` | precedence and handoffs when several of the above apply |
-| `orbital-hud-motion` | circular HUD, aura rings, orbit arcs around a subject |
-| `animation-quality-gate` | contact sheets, flicker and silhouette checks before accepting a pass |
+| Family | Skills | For |
+| --- | --- | --- |
+| Production | 11 | modelling, materials, lighting, cameras, rendering, animation, export, UV texturing, workflow |
+| HUD and animation QA | 2 | orbiting HUD motion, and a gate that rejects a bad motion pass |
+| Reference reconstruction | 17 | rebuild a model from supplied sheets, wireframes, brand or mascot art |
 
-The other seventeen reconstruct a model **from supplied references** — the family that makes "match this sheet exactly" possible:
-
-| Skill | Covers |
-| --- | --- |
-| `reference-to-3d` | rebuild from reference sheets, orthographic views, brand or mascot art |
-| `wireframe-to-3d` | orthographic wireframe drawings → model, exported as glTF/GLB |
-| `mascot-logo-reconstruction` | fail-gated, source-locked mascot / logo / avatar rebuild |
-| `orthographic-registration` | register front/side/back/top views into one coordinate contract |
-| `multiview-constraint-solver` | decide whether one rigid model can satisfy every view; emit constraints (no Blender tool needed) |
-| `multiview-fit-loop` | compare-adjust-repeat fitting against the templates |
-| `fit-repair-optimizer` | turn fit reports into a repair queue |
-| `landmark-fit-repair` | repair against named landmarks (tips, corners, eyes, rim thickness) |
-| `reference-analysis-validator` | validate the supplied references before calling a rebuild 1:1 |
-| `reference-look-calibration` | calibrate materials, light, crop, glow and HUD styling against the original |
-| `source-part-segmentation` | plan how a reference splits into parts (no Blender tool needed) |
-| `contour-to-mesh` | build surfaces from extracted contours and masks |
-| `atlas-uv-fitting` | map each source part to its own atlas rectangle |
-| `closed-surface-uv-coverage` | cover caps and sidewalls of closed or extruded assets |
-| `texture-driven-mesh-fitting` | reshape geometry to texture or decal contours |
-| `texture-state-animation` | texture-state transitions without crossfades or popping |
-| `quality-refinement-autoloop` | self-refine when a result misses the bar |
-
-**What this half needs:** Blender installed on the machine, and one Blender MCP server connected (`mcp__blender__*` from ahujasid/blender-mcp, or `mcp__blender_official__*`). Without them the CAD half still runs; the Blender skills say what is missing instead of describing a render they did not make.
-
-**Not edited here.** They are upstream text; routing and local advice live in `skills/3d-fabric/SKILL.md` and `AGENTS.md`. `skills/vendored.json` records the upstream commit date and a SHA-256 per file, and `tests/test_bundled_skills.py` fails if a file and its hash disagree.
+They need a local Blender and a Blender MCP server (`mcp__blender__*` or `mcp__blender_official__*`); without them the CAD half still runs. Every skill, with what it covers, is in **[docs/BLENDER_SKILLS.md](docs/BLENDER_SKILLS.md)**.
 
 ---
 
@@ -130,214 +223,48 @@ A built model yields three files side by side: the mesh (`bracket.stl`), an edit
 
 ---
 
-## Installation
+## Full reference
 
-Install the whole thing as one plugin: `run.py`, `scripts/` and `skills/` share one engine, and a scattered copy fails.
+The action flags, the gate record, exit codes, the dependency map, the repository layout and the test suite live in **[docs/REFERENCE.md](docs/REFERENCE.md)**, so this page can stay a quick start.
 
-### Prerequisite: install SolidCraft
-
-3d-fabric ships no solid kernel; it drives a SolidCraft installation you already have. SolidCraft is open source and free (MIT / Apache-2.0 dual licence) and has to be installed separately:
-
-| Platform | Download |
-| --- | --- |
-| Windows | [solidcraft-windows-x64.msi](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-windows-x64.msi) |
-| macOS | [solidcraft-macos-universal.dmg](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-macos-universal.dmg) (Apple silicon and Intel) |
-| Linux | [solidcraft-linux-x86_64.AppImage](https://github.com/tangency-labs/solidcraft/releases/latest/download/solidcraft-linux-x86_64.AppImage), or `sudo snap install solidcraft` |
-
-- Everything else — ARM64 and 32-bit builds, portable zip, `.deb`, `.rpm`, Flatpak — is on the [downloads page](https://solidcraft.io/download).
-- The Windows downloads are not code-signed yet, so SmartScreen stops you once: **More info → Run anyway**.
-- The browser build at <https://solidcraft.io> needs no install, but it exposes no `solidcraft-cli`, so **this plugin cannot use it**.
-
-`solidcraft-cli --version` printing a version line is enough; if it is not on `PATH`, point at it with `--solidcraft`, `SOLIDCRAFT_CLI` or `SOLIDCRAFT_HOME` — details in [docs/INSTALL_COMMANDS.md](docs/INSTALL_COMMANDS.md).
-
-> **Only four actions need it**: `model`, `script`, `measure`, `snapshot`. `inspect` and `repair` do not — a mesh from a scanner, a download or another CAD package stays checkable and repairable on a machine that has never installed SolidCraft.
-
-### Prerequisite: Blender (only if you want that half)
-
-The thirty Blender skills need two things, both from the Blender ecosystem and neither bundled here:
-
-1. **A local Blender** — <https://www.blender.org/download/> (4.x is fine)
-2. **A Blender MCP server**, exposing Blender as the `mcp__blender__*` or `mcp__blender_official__*` tool set
-
-With either missing, the Blender skills say what is missing rather than describing a render they did not make. The CAD half is unaffected — `run.py` never touches Blender.
-
-### Method 1: install from the plugin marketplace by URL
-
-Every host has a plugin marketplace of its own. Register this repository's Git URL and install the plugin it lists (registering twice is harmless — the second call reports it is already known).
-
-```bash
-https://github.com/JiamingShi-JsPhys/3d-fabric
-```
-
-An unpublished, renamed or moved repository changes nothing: the marketplace manifest uses `source: "./"`, a relative path, so the line above can be replaced with the folder you already have — installing never touches the network.
-
-### Method 2: install with commands
-
-Claude Code, Codex, dsh and CodeBuddy each take one plugin command; Cursor, Windsurf, Cline, Continue, Roo Code, GitHub Copilot and opencode read rule files, and one script writes them all. Every host's full command, every `install.py` flag and the optional capabilities are on this page: **[docs/INSTALL_COMMANDS.md](docs/INSTALL_COMMANDS.md)**.
-
-### Method 3: let your AI install it
-
-```bash
-Please visit the GitHub repository `https://github.com/JiamingShi-JsPhys/3d-fabric`, clone it, and run `python install.py --check --deps`. If your host has a plugin system, install the whole set as a single plugin instead; that script covers the hosts that read rule files.
-```
-
-> **Warning**: an AI that copies `run.py` without `scripts/` can scatter the files into unrelated directories. Modules import each other, and a loose copy fails outright. If you want the complete plugin, use Method 1.
+The three words you will meet first: `ready_to_print` is a pass, `needs_repair` means a defect this plugin can fix, and `blocked` means it cannot — a non-manifold edge, an empty file, a zero-thickness part.
 
 ---
 
-## Quick start
+## Security & Open Source Statement
 
-### The seven actions
-
-| Action | Does | Needs SolidCraft |
-| --- | --- | --- |
-| `probe` | Locate and verify the CLI | — (looks for it) |
-| `model` | Run a script, export, auto-inspect; `--in` edits an existing design | **yes** |
-| `script` | Turn a `.sc` / `.step` back into a `{"commands": [...]}` script | **yes** |
-| `measure` | Volume, mass, area, bounds, face types and parameters from the B-rep | **yes** |
-| `snapshot` | Render a PNG preview (views, sections, per-body styling) | **yes** |
-| `inspect` | Print-quality report on any mesh | no |
-| `repair` | Weld, fill holes, fix normals | no |
-
-```bash
-python run.py --action probe
-python run.py --action model    --input examples/bracket_request.json --quality fine
-python run.py --action script   --input bracket.sc --output build.json
-python run.py --action model    --script widen.json --in bracket.sc --output bracket_150.stl
-python run.py --action measure  --input bracket.sc
-python run.py --action snapshot --input bracket.sc --output bracket.png --view iso
-python run.py --action inspect  --input examples/damaged_part.stl
-python run.py --action repair   --input examples/damaged_part.stl --center
-```
-
-### From the chat box
-
-Once installed as a plugin, the skill is one `/` away and triggers on the vocabulary of the task — "3D 打印", "参数化建模", "建一个实体模型", "做个外壳/支架", or a request to check an STL before slicing.
-
-```text
-/3d-fabric  一块 120x70x8 的转接板，四角 R8 圆角，中间 40x20 通孔，四角 Ø4.5 孔距边 12mm
-```
-
-The agent probes, writes the SolidCraft script, calls `model`, reads the gate, and reports the size, volume and verdict — or fixes the failing step and re-runs. When the design already exists, it calls `script` to read it, `measure` for the mass and volume, `snapshot` for a picture, and `model --in` to apply the change. The full operating rules, including how to read `error: step N`, are in [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md).
-
-### When you need the CLI
-
-Everything is available headlessly for scripts and CI: the action set, the transform flags, the gate JSON schema and the exit codes are documented in [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md).
-
-```bash
-python run.py --action model --input req.json --root ./ws --json
-```
-
-With `--root`, the gate lands at `<root>/process/gates/3d-fabric_<timestamp>.json` and its contents are byte-identical to the `--json` line on stdout.
+> **Disclaimer**: This repository is a community plugin written to automate a 3D-modelling workflow. It is not affiliated with, sponsored by, or endorsed by the SolidCraft project. It contains no SolidCraft source code and bundles none of its binaries or assets; SolidCraft must be installed separately by the user. The only SolidCraft material reproduced here is the project's four agent reference documents, copied verbatim under its MIT licence with the copyright notice and NOTICE intact — see [Bundled third-party material](#bundled-third-party-material).
+>
+> The plugin never sends your model anywhere. It makes no network requests, runs no `eval`, and its only subprocess is the locally installed `solidcraft-cli` that you already have.
 
 ---
 
-## Requirements
+## Bundled third-party material
 
-Python 3.10+ and `trimesh`, `numpy` and `scipy` — all permissively licensed (MIT / BSD-3-Clause) and installed with `python -m pip install -r requirements.txt`.
+`references/solidcraft/` carries SolidCraft's four agent reference documents, copied verbatim under its MIT licence with the copyright notice and NOTICE intact. Nothing there is registered as a skill and `run.py` never executes it; delete the folder and `run.py` still works.
 
-**SolidCraft** is required for `model`, `script`, `measure` and `snapshot`. The plugin does not ship it; [Prerequisite: install SolidCraft](#prerequisite-install-solidcraft) above covers the downloads (MIT OR Apache-2.0, <https://solidcraft.io/download>). `probe` accepts the CLI from `--solidcraft`, `SOLIDCRAFT_CLI`, `SOLIDCRAFT_HOME`, `PATH`, or the usual install folders, and verifies each candidate by running `--version` — a file that cannot answer is not accepted.
-
-**Blender** and a Blender MCP server are required for the thirty bundled skills, and neither is shipped here — see [Prerequisite: Blender](#prerequisite-blender-only-if-you-want-that-half) (Blender from <https://www.blender.org/download/>). The skills activate only when `mcp__blender__*` or `mcp__blender_official__*` tools are present. Nothing in `run.py` touches Blender.
-
-Nothing is vendored. `numpy-stl` appears only in the test suite, as an independent STL reader used to prove exported files are standard STL.
-
----
-
-## Repository layout
-
-```text
-3d-fabric/
-├── .claude-plugin/                   # Claude Code plugin manifest + marketplace
-├── .clinerules/                      # Cline rule file
-├── .codebuddy-plugin/                # CodeBuddy plugin manifest + marketplace
-├── .codex-plugin/                    # Codex plugin manifest + marketplace (+ interface)
-├── .continue/rules/                  # Continue rule file
-├── .cursor/rules/                    # Cursor rule file (.mdc)
-├── .dsh-plugin/                      # dsh directory entry (delegates to index.js)
-├── .github/                          # GitHub Copilot rule file
-├── .gitattributes                    # LF normalisation; binary meshes marked
-├── .gitignore
-├── .roo/rules/                       # Roo Code rule file
-├── .windsurf/rules/                  # Windsurf rule file
-├── AGENTS.md                         # agent operating rules — the body of all six rule files
-├── CHANGELOG.md                      # release notes
-├── LICENSE                           # MIT
-├── README.md                         # this file
-├── README_zh.md                      # 简体中文
-├── THIRD_PARTY_LICENSES.txt          # upstream licences + SolidCraft relationship
-├── cordis.patch.yml                  # dsh: inserts the plugin into a profile
-├── docs/
-│   ├── INSTALL_COMMANDS.md           # every host's install command, every install.py flag
-│   ├── INSTALL_COMMANDS_zh.md        # the same, in Chinese
-│   └── DEPENDENCIES.md               # capability / dependency / missing-behaviour matrix
-├── examples/
-│   ├── bracket_request.json          # natural language + 21 SolidCraft commands
-│   ├── damaged_part.stl              # holed sphere for inspect / repair demos
-│   └── make_demo.py                  # regenerates damaged_part.stl
-├── index.js                          # dsh entry: registers every skills/*/SKILL.md
-├── install.py                        # --check / --deps / --skill-dir / --project / --global
-├── licenses/
-│   └── cc-blender-skill-LICENSE.txt  # upstream MIT text for the bundled skills
-├── manifest.json                     # skill-pipeline metadata (stage, actions, deps)
-├── package.json                      # dsh package manifest (dsh.bundle.patch)
-├── pyproject.toml                    # package metadata + pytest/pyright config
-├── requirements.txt
-├── references/
-│   └── solidcraft/                   # SolidCraft's four agent references, verbatim (MIT)
-│                                     #   README.md: provenance, hashes, update steps
-├── run.py                            # CLI: probe / model / script / measure /
-│                                     #      snapshot / inspect / repair
-├── scripts/
-│   ├── engine.py                     # trimesh geometry: load, transform, analyze, repair, export
-│   └── solidcraft.py                 # CLI bridge: probe, run, eval, snapshot, script
-├── skills/
-│   ├── vendored.json                 # upstream URL, fetch date, SHA-256 per skill file
-│   ├── 3d-fabric/                    # this plugin's own skill: CAD half + routing
-│   └── <30 Blender skills>/          # verbatim from github.com/RobLe3/cc-blender-skill
-│                                     #   (MIT): 11 production + 2 HUD/animation QA
-│                                     #   + 17 reference-reconstruction skills
-└── tests/
-    ├── conftest.py                   # generated fixtures (no binary blobs)
-    ├── stub_solidcraft.py            # test double for the CLI
-    ├── test_actions.py               # measure / snapshot / script, model --in
-    ├── test_bundled_skills.py        # Blender skills present, bound to an MCP, hashes match
-    ├── test_cli.py                   # exit codes, gate files, stdout contract
-    ├── test_dsh_bundle.py            # dsh.bundle.patch, the CJS entry, version agreement
-    ├── test_engine.py                # geometry, defects, repair, export
-    ├── test_install.py               # --check, --skill-dir, argument handling
-    ├── test_model.py                 # the full build → inspect chain
-    ├── test_plugin_manifests.py      # four plugin manifests + six rule files stay in step
-    ├── test_references.py            # SolidCraft references present, hashes match
-    └── test_solidcraft.py            # probe, run, failure and silent-success cases
-```
-
----
-
-## Tests
-
-```bash
-python -m pytest
-```
-
-That is 137 tests, all passing. They cover the geometry engine (loading STL with welding, transforms about a pivot, winding, inverted shells, cavities versus inside-out bodies, every defect class, hole filling on quads and on a 32-gon boundary, export round-trips against an independent STL reader), the CLI contract (exit codes, gate files, human and `--json` output), the design-reading actions (`measure` totals and open bodies, `snapshot` PNG output, `script` extraction, `model --in`), the bundled references (presence, provenance hashes against the README table, the MIT text, and that `install.py --skill-dir` copies them), the bundled Blender skills (present, named by their frontmatter, every one bound to a Blender MCP tool set, cross-skill links resolving, hashes matching `skills/vendored.json`), the dsh package (the `dsh.bundle.patch` declaration, the CJS entry listing all thirty-one skills, version agreement with the Claude Code manifests), the platform half (all four plugin manifests and all six rule files, each rule file pinned to `AGENTS.md` so one edit cannot leave a host behind), the installer's own checks, and the SolidCraft bridge through a Python stub CLI — so the suite passes on a machine with SolidCraft installed or not. When the real CLI is present, one integration test runs against it and is skipped otherwise.
+What was copied and why, the one omission, and where the MIT boundary falls are in **[docs/THIRD_PARTY.md](docs/THIRD_PARTY.md)**.
 
 ---
 
 ## Known limitations
 
-Honest edge cases — read before relying on any output:
+### Read before use
 
 - **The gate checks geometry, not intent.** A watertight model can still be the wrong part. Compare the reported `volume` and `extents` with what you calculated; SolidCraft reports success for a cut that missed entirely.
 - **Slicing is out of scope.** G-code, supports, overhang and wall analysis belong to the slicer; 3d-fabric stops at a printability verdict.
-- **Hole filling is a planar fan.** A loop whose out-of-plane thickness exceeds 5% of its radius is skipped with a note instead of being filled badly, and a curved surface spanning the hole is never recreated.
 - **Non-manifold edges are reported, not repaired.** An edge shared by three faces leaves `success: false` and its count in `after.topology`; splitting it needs a CAD tool.
-- **Self-intersections are not detected** — `trimesh` has no robust routine for it.
 - **STEP is not inspected.** It is a B-rep with no triangles; export STL first.
+- **Units are assumed.** STL carries none; the report says `mm` and marks it as an assumption.
+
+### Edge cases
+
+- **Hole filling is a planar fan.** A loop whose out-of-plane thickness exceeds 5% of its radius is skipped with a note instead of being filled badly, and a curved surface spanning the hole is never recreated.
+- **Self-intersections are not detected** — `trimesh` has no robust routine for it, so a mesh that intersects itself can still pass.
 - **`--quality fine|finest` needs a JSON script.** Tessellation quality is a per-command setting in SolidCraft, so the export is injected into the script; `.sc` designs use the default and say so in `notes`.
 - **`script` is a reconstruction, not a source file.** Steps that depend on saved design state (SolidCraft's `timeline.add`) come back with the CLI's own replay note attached to the gate; replay it with `model`, don't assume it rebuilds byte-for-byte.
 - **One model at a time.** An assembly is reported through `body_count`, not split or arranged.
-- **Units are assumed.** STL carries none; the report says `mm` and marks it as an assumption.
+- **The Blender skills are upstream text.** Their behaviour depends on the Blender MCP server you connect and the Blender version you run; the hash tests catch drift in the files, not in Blender.
 
 ---
 
@@ -347,17 +274,19 @@ Honest edge cases — read before relying on any output:
 
 **Security vulnerabilities (this category only)**: do **not** use the public Issues page. Email `jiamingshi_git@outlook.com` instead.
 
-- **Subject**: must carry the prefix `report` plus the product name and a short summary.
+- **Subject**: must carry the prefix `report_3d-fabric:` plus a short summary.
   - Example: `report_3d-fabric: requirement JSON can write outside the output directory`
 - **Body**: must include reproduction steps, the exact command line, and the environment.
 
-*Contributors who file clear, reproducible issues or pull requests are credited in the next release's notes.*
+*Contributors who file clear, reproducible issues or pull requests are credited in the next release's notes and in [Acknowledgements](#acknowledgements).*
 
 ---
 
 ## Acknowledgements
 
-**wlheyuyang** — [issue #1](https://github.com/JiamingShi-JsPhys/3d-fabric/issues/1) reported that a mesh with inconsistent face winding passed the printability gate, and supplied the reproduction that became the 1.1.1 winding fix.
+wlheyuyang
+
+[Full acknowledgements](docs/ACKNOWLEDGEMENTS.md)
 
 ---
 
@@ -369,13 +298,6 @@ Honest edge cases — read before relying on any output:
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE) and [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt).
 
 **Author & Maintainer**: Jiaming Shi
-
-That grant covers this project's own work: `run.py`, `scripts/`, the `3d-fabric` skill, `install.py`, the docs and the tests. It does **not** cover the third-party material bundled inside:
-
-- `skills/` — thirty Blender skills, © 2026 RobLe3, MIT ([licence](licenses/cc-blender-skill-LICENSE.txt)).
-- `references/solidcraft/` — four SolidCraft agent references, © 2026 SolidCraft contributors, MIT ([licence](references/solidcraft/LICENSE-MIT)).
-
-Both were copied verbatim and their notices travel with them, as MIT requires. See [THIRD_PARTY_LICENSES.txt](THIRD_PARTY_LICENSES.txt) for the full list.
