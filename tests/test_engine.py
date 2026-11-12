@@ -91,6 +91,31 @@ def test_negative_scale_is_refused(cube):
         engine.transform(cube, scale=-1.0)
 
 
+def test_pivot_stays_put_when_the_mesh_is_not_at_the_origin():
+    """Scaling or rotating about a pivot must leave that pivot where it is.
+
+    Regression: the matrix was composed as ``T(-o) @ M @ T(o)``, which is the
+    inverse of the pivot transform in trimesh's column-vector convention.  A
+    cube centred at x=10, scaled by 2 about its own centroid, landed at x=30.
+    """
+    box = trimesh.creation.box(extents=(2, 2, 2))
+    box.apply_translation([10, 0, 0])
+
+    scaled = engine.transform(box, scale=2.0)  # default pivot: the centroid
+    assert np.allclose(scaled.centroid, [10, 0, 0], atol=1e-6), "scale moved the mesh off its pivot"
+    assert np.allclose(scaled.extents, [4, 4, 4], atol=1e-6)
+
+    turned = engine.transform(box, rotate_deg=[0, 0, 90], pivot=[10, 0, 0])
+    assert np.allclose(turned.centroid, [10, 0, 0], atol=1e-6), "rotation moved the mesh off its pivot"
+
+
+def test_scale_about_an_explicit_pivot_stretches_away_from_it():
+    box = trimesh.creation.box(extents=(2, 2, 2))
+    box.apply_translation([10, 0, 0])
+    scaled = engine.transform(box, scale=2.0, pivot=[0, 0, 0])
+    assert np.allclose(scaled.centroid, [20, 0, 0], atol=1e-6)
+
+
 # ---------------------------------------------------------------------------
 # inspection
 # ---------------------------------------------------------------------------
@@ -155,6 +180,110 @@ def test_inspect_counts_two_hole_loops(open_tube_stl):
     assert report["topology"]["boundary_edge_count"] == 64
 
 
+def test_one_reversed_face_blocks_the_pass(cube):
+    """A single flipped triangle makes the surface non-solid, not merely noisy.
+
+    Regression: ``inconsistent_winding`` was a warning, so a watertight cube
+    with one reversed face — one that trimesh already reports as
+    ``is_volume is False`` — came back ``ready_to_print``.
+    """
+    mesh = cube.copy()
+    faces = mesh.faces.copy()
+    faces[0] = faces[0][::-1]
+    mesh.faces = faces
+    assert mesh.is_watertight and not mesh.is_winding_consistent
+    assert not mesh.is_volume
+
+    report = engine.analyze(mesh, source=None)
+    issues = {i["code"]: i["severity"] for i in report["printability"]["issues"]}
+    assert issues.get("inconsistent_winding") == "error"
+    assert report["printability"]["verdict"] != "ready_to_print"
+    assert report["printability"]["repairable"] is True
+
+
+def test_a_watertight_non_solid_is_never_printable(cube):
+    """The verdict cannot say PASS while trimesh says the mesh is not a volume."""
+    mesh = cube.copy()
+    faces = mesh.faces.copy()
+    faces[0] = faces[0][::-1]
+    mesh.faces = faces
+    report = engine.analyze(mesh, source=None)
+    assert report["topology"]["watertight"] is True
+    assert report["printability"]["verdict"] == "needs_repair"
+
+
+def _box(extents, at=(0.0, 0.0, 0.0), invert=False) -> "trimesh.Trimesh":
+    part = trimesh.creation.box(extents=extents)
+    if at != (0.0, 0.0, 0.0):
+        part.apply_translation(at)
+    if invert:
+        part.faces = part.faces[:, ::-1]
+    return part
+
+
+def _combine(*parts) -> "trimesh.Trimesh":
+    merged = trimesh.util.concatenate(parts)
+    assert isinstance(merged, trimesh.Trimesh)
+    return merged
+
+
+def test_two_correct_bodies_pass():
+    mesh = _combine(_box((10, 10, 10)), _box((2, 2, 2), at=(15, 0, 0)))
+    report = engine.analyze(mesh, source=None)
+    codes = {i["code"] for i in report["printability"]["issues"]}
+    assert "multi_body" in codes
+    assert report["printability"]["verdict"] == "ready_to_print"
+
+
+def test_a_small_inverted_body_cannot_hide_behind_a_large_one():
+    """Global is_volume stays True because 1000 - 8 is still positive.
+
+    Regression for the multi-body report: the total signed volume is positive,
+    the mesh is watertight and each shell is internally consistent, so every
+    global property says "valid volume" while one shell is inside-out.
+    """
+    mesh = _combine(_box((10, 10, 10)), _box((2, 2, 2), at=(15, 0, 0), invert=True))
+    assert mesh.is_volume is True, "the fixture must reproduce the global false-positive"
+    report = engine.analyze(mesh, source=None)
+    issues = {i["code"]: i["severity"] for i in report["printability"]["issues"]}
+    assert issues.get("inverted_body") == "error"
+    assert report["printability"]["verdict"] != "ready_to_print"
+
+
+def test_the_inverted_body_is_caught_even_when_it_is_the_larger_one():
+    mesh = _combine(_box((10, 10, 10), invert=True), _box((2, 2, 2), at=(15, 0, 0)))
+    report = engine.analyze(mesh, source=None)
+    assert report["printability"]["verdict"] != "ready_to_print"
+
+
+def test_several_valid_bodies_at_different_places_pass():
+    mesh = _combine(
+        _box((4, 4, 4)),
+        _box((3, 3, 3), at=(20, 0, 0)),
+        _box((2, 2, 2), at=(-20, 5, 0)),
+    )
+    report = engine.analyze(mesh, source=None)
+    assert report["printability"]["verdict"] == "ready_to_print"
+
+
+def test_a_cavity_is_not_an_inverted_body():
+    """A hollow part is one shell inside another, wound inwards on purpose."""
+    mesh = _combine(_box((10, 10, 10)), _box((2, 2, 2), invert=True))
+    assert mesh.is_volume is True
+    report = engine.analyze(mesh, source=None)
+    codes = {i["code"] for i in report["printability"]["issues"]}
+    assert "inverted_body" not in codes
+    assert report["printability"]["verdict"] == "ready_to_print"
+
+
+def test_repair_turns_an_inverted_body_the_right_way_out():
+    mesh = _combine(_box((10, 10, 10)), _box((2, 2, 2), at=(15, 0, 0), invert=True))
+    repaired, report = engine.repair(mesh)
+    assert report["success"] is True
+    volumes = sorted(round(float(p.volume), 3) for p in repaired.split(only_watertight=False))
+    assert volumes == [8.0, 1000.0]
+
+
 def test_report_is_json_serialisable(cube):
     report = engine.analyze(cube, source="cube.stl", fmt="stl")
     text = json.dumps(report)
@@ -190,6 +319,20 @@ def test_repair_flips_inverted_shell(inverted_cube_stl):
     assert report["success"] is True
     assert repaired.volume > 0
     assert report["after"]["topology"]["normals_outward"] is True
+
+
+def test_repair_makes_a_single_reversed_face_printable(cube):
+    mesh = cube.copy()
+    faces = mesh.faces.copy()
+    faces[0] = faces[0][::-1]
+    mesh.faces = faces
+    assert engine.analyze(mesh, source=None)["printability"]["verdict"] == "needs_repair"
+
+    repaired, report = engine.repair(mesh)
+    assert repaired.is_winding_consistent
+    assert repaired.is_volume
+    assert report["success"] is True
+    assert report["after"]["printability"]["verdict"] == "ready_to_print"
 
 
 def test_repair_can_skip_hole_filling(open_tube_stl):

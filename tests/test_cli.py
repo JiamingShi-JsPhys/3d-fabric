@@ -78,6 +78,17 @@ def test_inspect_writes_gate_under_root(cube_stl, tmp_path):
     assert gate["timestamp"]
 
 
+def test_back_to_back_runs_do_not_overwrite_each_others_gate(cube_stl, tmp_path):
+    """Second precision used to collapse two runs into one gate file."""
+    root = tmp_path / "ws"
+    first = run_cli("--action", "inspect", "--input", cube_stl, "--root", root, "--json")
+    second = run_cli("--action", "inspect", "--input", cube_stl, "--root", root, "--json")
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    gates = sorted((root / "process" / "gates").glob("3d-fabric_*.json"))
+    assert len(gates) == 2, "the second run overwrote the first run's gate"
+
+
 # ---------------------------------------------------------------------------
 # repair
 # ---------------------------------------------------------------------------

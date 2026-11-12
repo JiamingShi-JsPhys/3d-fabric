@@ -4,6 +4,58 @@ All notable changes to 3d-fabric are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] — 2026-11-12
+
+Three correctness fixes in the printability gate and in the transform helper,
+all found by an external review, all reproducible on 1.1.0. `run.py` and
+`scripts/` change only where noted; the seven actions, the gate schema and the
+exit codes are untouched.
+
+### Fixed
+
+- **A single reversed face no longer passes the gate.** `inconsistent_winding`
+  was a `warning`, so a watertight mesh with one flipped triangle — one that
+  `trimesh` already reports as `is_volume is False` — came back
+  `ready_to_print`. It is an `error` now, and the verdict additionally refuses
+  `ready_to_print` for any watertight mesh that is not a volume. `repair`
+  already handled this through `fix_normals`, so the verdict is
+  `needs_repair` with `repairable: true`, not `blocked`. Reported as issue #1.
+- **An inverted component no longer hides behind a valid one.** `is_volume` is
+  a property of the whole mesh, so a watertight multi-body mesh whose total
+  signed volume stayed positive passed even when one shell was inside-out —
+  1000 mm³ minus 8 mm³ is still positive. Every closed shell is checked on its
+  own now: a shell with negative signed volume is a cavity when it sits inside
+  another shell, because a hollow part is legitimate geometry, and an
+  `inverted_body` error when it does not. The containment test uses ray parity
+  through `trimesh.ray_triangle`, which is pure numpy, so no optional
+  `rtree` backend is required.
+- **Scaling and rotating about a pivot no longer move the mesh.** The matrix
+  was composed as `T(-o) @ M @ T(o)`, the inverse of the pivot transform in
+  trimesh's column-vector convention. A cube centred at x=10, scaled by 2 about
+  its own centroid, landed at x=30; rotated 90° about (10, 0, 0) it moved to
+  (-10, 20). `--scale` and `--rotate` take no `--pivot` flag, so the default
+  pivot is the centroid and every scaled or rotated run was affected. Both
+  compositions are `T(o) @ M @ T(-o)` now.
+- **Scratch sidecars are unique per call.** The per-step results file was
+  written as `._3d-fabric-results.json` in the output directory, so two
+  concurrent runs into one folder overwrote each other. The name carries the
+  PID and a random tag now, and `run()` returns `results_path` so callers do
+  not have to guess it.
+- **Gate filenames carry milliseconds.** `3d-fabric_<stamp>.json` was stamped to
+  the second, so two runs finishing in the same second produced one file and
+  the later one won silently.
+
+### Tests
+
+137 tests, thirteen of them new: the pivot is pinned for the default and for an
+explicit pivot, one reversed face blocks the pass, a watertight non-solid is
+never printable, `repair` makes a reversed face printable again, back-to-back
+CLI runs write two gates, scratch sidecars differ per call, and six multi-body
+cases — two valid bodies, a small inverted body behind a large one, an inverted
+body that is the larger one, several valid bodies at different places, a hollow
+part whose inner shell must not be read as inverted, and `repair` turning an
+inverted body the right way out.
+
 ## [1.1.0] — 2026-11-06
 
 The Blender half. 3d-fabric stops being only a CAD front end: it now ships the

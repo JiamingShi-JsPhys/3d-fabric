@@ -121,14 +121,17 @@ def test_run_writes_outputs(tmp_path):
     assert out.is_file() and out.stat().st_size > 0
     assert isinstance(result["results"], list)
     # the results sidecar is cleaned up unless asked for
-    assert not (tmp_path / ".3d-fabric-results.json").exists()
+    assert result["results_path"] is None
+    assert not list(tmp_path.glob(".3d-fabric-*results.json"))
 
 
 def test_run_keeps_results_when_asked(tmp_path):
     script = sc.materialize_script(SCRIPT["commands"], tmp_path / "s.json")
     out = tmp_path / "out.stl"
-    sc.run(STUB, script, [out], timeout=60, keep_results=True)
-    assert (tmp_path / ".3d-fabric-results.json").is_file()
+    result = sc.run(STUB, script, [out], timeout=60, keep_results=True)
+    kept = pathlib.Path(result["results_path"])
+    assert kept.is_file()
+    assert kept.parent == tmp_path
 
 
 def test_run_reports_failure_and_writes_nothing(tmp_path, monkeypatch):
@@ -180,6 +183,15 @@ def test_run_missing_cli_raises(tmp_path):
 # ---------------------------------------------------------------------------
 # integration (real SolidCraft, when installed)
 # ---------------------------------------------------------------------------
+
+def test_scratch_sidecars_are_unique_per_call(tmp_path):
+    """A fixed sidecar name let two concurrent runs clobber each other."""
+    first = sc._temp_sidecar(tmp_path, "-results.json")
+    second = sc._temp_sidecar(tmp_path, "-results.json")
+    assert first != second
+    assert first.parent == tmp_path and second.parent == tmp_path
+    assert first.name.startswith(".") and first.name.endswith("-results.json")
+
 
 @pytest.mark.skipif(shutil.which("solidcraft-cli") is None
                     and not pathlib.Path("D:/Applications/SolidCraft/solidcraft-cli.exe").is_file(),

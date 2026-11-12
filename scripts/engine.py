@@ -64,6 +64,7 @@ _REPAIRABLE = {
     "not_watertight",
     "holes",
     "inverted_normals",
+    "inverted_body",
     "inconsistent_winding",
     "degenerate_faces",
     "duplicate_vertices",
@@ -164,10 +165,14 @@ def transform(
         )
         matrix = np.eye(4)
         matrix[:3, :3] = np.diag(scale_vec)
+        # trimesh applies transforms to column vectors (v' = M @ v), so
+        # "move the pivot to the origin, transform, move it back" is
+        # T(origin) @ M @ T(-origin).  The reverse order moves the mesh
+        # instead of pinning the pivot.
         matrix = (
-            trimesh.transformations.translation_matrix(-origin)
+            trimesh.transformations.translation_matrix(origin)
             @ matrix
-            @ trimesh.transformations.translation_matrix(origin)
+            @ trimesh.transformations.translation_matrix(-origin)
         )
         out.apply_transform(matrix)
 
@@ -177,9 +182,9 @@ def transform(
         if pivot is not None:
             origin = np.asarray(pivot, dtype=float).reshape(3)
             matrix = (
-                trimesh.transformations.translation_matrix(-origin)
+                trimesh.transformations.translation_matrix(origin)
                 @ matrix
-                @ trimesh.transformations.translation_matrix(origin)
+                @ trimesh.transformations.translation_matrix(-origin)
             )
         out.apply_transform(matrix)
 
@@ -233,6 +238,76 @@ def _safe_body_count(mesh: "trimesh.Trimesh") -> Optional[int]:
         return None
 
 
+#: A direction that is not axis-aligned, so a test ray does not graze an edge
+#: or a vertex of a box-shaped shell.
+_RAY_DIRECTION = np.array([[0.5773502691896258, 0.5773502691896258, 0.5773502691896258]])
+
+
+def _point_inside(mesh: "trimesh.Trimesh", point: Any) -> Optional[bool]:
+    """Point-in-mesh by ray parity.  ``None`` when the test cannot run.
+
+    ``trimesh.Trimesh.contains`` requires ``rtree``, which is an optional
+    dependency this project does not take; ``ray_triangle`` is pure numpy and
+    answers the same question for a handful of points.
+    """
+    try:
+        from trimesh.ray import ray_triangle
+        triangles = np.asarray(mesh.triangles, dtype=np.float64)
+        origin = np.asarray(point, dtype=np.float64).reshape(1, 3)
+        _, _, hits = ray_triangle.ray_triangle_id(triangles, origin, _RAY_DIRECTION)
+        return bool(len(hits) % 2)
+    except Exception:  # pragma: no cover - backend missing or degenerate input
+        return None
+
+
+def _bbox_encloses(inner: "trimesh.Trimesh", outer: "trimesh.Trimesh") -> bool:
+    """Fallback containment test when ray parity is unavailable."""
+    ib, ob = np.asarray(inner.bounds), np.asarray(outer.bounds)
+    return bool(np.all(ib[0] > ob[0]) and np.all(ib[1] < ob[1]))
+
+
+def _check_bodies(mesh: "trimesh.Trimesh") -> Dict[str, int]:
+    """Validate every closed shell on its own, not just the mesh as a whole.
+
+    ``mesh.is_volume`` only proves that the *total* signed volume is positive:
+    one small inside-out shell can hide behind a large correct one and the two
+    still sum positive, so a global check reports a valid volume for a mesh
+    with an inverted part.
+
+    Each closed component is therefore checked separately. A component with a
+    negative signed volume is a **cavity** when it sits inside another shell —
+    a hollow part is legitimate geometry, and its inner shell is wound
+    inwards on purpose — and an **inverted body** when it does not.
+    """
+    try:
+        parts = list(mesh.split(only_watertight=False))
+    except Exception:  # degenerate graph; the caller's other checks still run
+        return {"closed": 0, "inverted": 0, "cavities": 0}
+
+    closed = [p for p in parts if len(p.faces) and p.is_watertight]
+    inverted = 0
+    cavities = 0
+    for part in closed:
+        if float(part.volume) >= 0:
+            continue
+        centroid = np.asarray(part.centroid, dtype=float).reshape(3)
+        inside = False
+        for other in closed:
+            if other is part:
+                continue
+            verdict = _point_inside(other, centroid)
+            if verdict is None:
+                verdict = _bbox_encloses(part, other)
+            if verdict:
+                inside = True
+                break
+        if inside:
+            cavities += 1
+        else:
+            inverted += 1
+    return {"closed": len(closed), "inverted": inverted, "cavities": cavities}
+
+
 def analyze(
     mesh: "trimesh.Trimesh",
     *,
@@ -266,6 +341,7 @@ def analyze(
     extents = bounds[1] - bounds[0]
 
     body_count = _safe_body_count(mesh)
+    bodies = _check_bodies(mesh) if body_count and body_count > 1 else None
 
     issues: List[Dict[str, Any]] = []
 
@@ -294,8 +370,18 @@ def analyze(
     if not winding_consistent:
         issue(
             "inconsistent_winding",
-            "warning",
-            "adjacent faces disagree about which side is outside",
+            "error",
+            "adjacent faces disagree about which side is outside; a slicer "
+            "cannot reliably tell inside from outside",
+        )
+    if bodies and bodies["inverted"]:
+        issue(
+            "inverted_body",
+            "error",
+            "a closed shell in this mesh is inside-out: its signed volume is "
+            "negative and it does not sit inside another shell, so it is not "
+            "a cavity",
+            bodies["inverted"],
         )
     if normals_outward is False:
         issue(
@@ -331,9 +417,15 @@ def analyze(
     errors = [i for i in issues if i["severity"] == "error"]
     error_codes = {i["code"] for i in errors}
     repairable = bool(error_codes) and error_codes.issubset(_REPAIRABLE)
+    # ``is_volume`` is trimesh's own "closed, consistently wound, positive
+    # volume" test.  It is False for every open mesh, so it only carries
+    # information once the surface is watertight — and there it is the
+    # backstop that stops a structurally closed but non-solid mesh from
+    # being reported as printable.
+    solid = (not watertight) or bool(mesh.is_volume)
     if len(mesh.faces) == 0 or float(extents.min()) <= 0:
         verdict = "blocked"
-    elif errors:
+    elif errors or not solid:
         verdict = "needs_repair"
     else:
         verdict = "ready_to_print"

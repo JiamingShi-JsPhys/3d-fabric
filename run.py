@@ -71,7 +71,13 @@ _MODEL_EXPORTS = {
 # ---------------------------------------------------------------------------
 
 def _utc_stamp() -> str:
-    return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    """UTC timestamp for gate filenames, to the millisecond.
+
+    Second precision meant two runs finishing in the same second wrote the
+    same gate file and the second one silently won.
+    """
+    now = datetime.now(timezone.utc)
+    return now.strftime("%Y%m%dT%H%M%S") + f"{now.microsecond // 1000:03d}Z"
 
 
 def _iso_now() -> str:

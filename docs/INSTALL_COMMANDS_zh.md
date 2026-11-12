@@ -62,7 +62,7 @@ claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPh
 **Claude Code** —— 在会话内执行，先按发布 tag 添加市场：
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.1
 ```
 
 再安装它列出的条目：
@@ -74,7 +74,7 @@ claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPh
 **Codex** —— 把 URL 注册为 Git 市场；`--ref` 锁定发布 tag，HTTPS 换成 SSH 或本地路径同样可用：
 
 ```bash
-codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.1.0
+codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.1.1
 ```
 
 ```bash
@@ -84,7 +84,7 @@ codex plugin add 3d-fabric@3d-fabric-marketplace
 **dsh（DeepSeek Harness）** —— dsh 把插件当 npm 包装，仓库里因此还带 `package.json` 与 `cordis.patch.yml`，由 `index.js` 把技能注册进 dsh 的技能表：
 
 ```bash
-dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.0
+dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.1
 ```
 
 `package.json` 里没有 `dsh.bundle.patch` 的包 dsh 一律拒收——就是「这个包没有声明组合包」（内部原因码 `reasonNotBundle`）。升级要先卸载：dsh 不会原地替换已安装的版本。
@@ -92,7 +92,7 @@ dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.0
 **CodeBuddy** —— 与 Claude Code 同一套命令：
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.1
 ```
 
 ```text

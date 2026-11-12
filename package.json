@@ -1,6 +1,6 @@
 {
   "name": "3d-fabric",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "The complete 3D modelling and 3D-printing toolchain in one package: natural-language part building through the local SolidCraft CLI, plus reading, editing, measuring and previewing a design, and print-quality mesh inspection and repair.",
   "license": "MIT",
   "author": {

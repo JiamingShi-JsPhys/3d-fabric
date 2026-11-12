@@ -8,7 +8,7 @@
 
 **English** · [简体中文](README_zh.md)
 
-**Version:** 1.1.0 | **CAD actions:** 7 | **Bundled Blender skills:** 30 | **Verified against:** SolidCraft 0.30.1
+**Version:** 1.1.1 | **CAD actions:** 7 | **Bundled Blender skills:** 30 | **Verified against:** SolidCraft 0.30.1
 
 **Install [SolidCraft](https://solidcraft.io/download) first, then this plugin.** The Blender half also needs a local Blender and a Blender MCP server. Both steps, every platform's command and the self-check are under [Installation](#installation).
 
@@ -32,7 +32,7 @@ whole path — build, edit, measure, preview, verify, repair — in one plugin, 
 CLI, one gate format, and one set of exit codes.
 
 What it leaves out is slicing — G-code, supports, overhang and wall analysis —
-and, on the artistic side, nothing: 1.1.0 bundles Blender's whole agent skill
+and, on the artistic side, nothing: 1.1.1 bundles Blender's whole agent skill
 family, so organic modelling, materials, lighting, cameras, rendering and
 animation are covered here too rather than by a second install.
 

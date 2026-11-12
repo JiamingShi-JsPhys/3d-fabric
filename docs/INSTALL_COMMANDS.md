@@ -62,7 +62,7 @@ claude plugin install 3d-fabric --marketplace https://github.com/JiamingShi-JsPh
 **Claude Code** — from inside a session, add the marketplace pinned to the release tag:
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.1
 ```
 
 Then install the entry it lists:
@@ -74,7 +74,7 @@ Then install the entry it lists:
 **Codex** — register the URL as a Git marketplace; `--ref` pins the release tag, and an SSH URL or a local path works in place of the HTTPS one:
 
 ```bash
-codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.1.0
+codex plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git --ref v1.1.1
 ```
 
 ```bash
@@ -84,7 +84,7 @@ codex plugin add 3d-fabric@3d-fabric-marketplace
 **dsh (DeepSeek Harness)** — dsh installs plugins as npm packages, so the repository carries a `package.json` and a `cordis.patch.yml` beside the Claude Code manifests, and `index.js` registers the skill with dsh's skill registry:
 
 ```bash
-dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.0
+dsh plugin --profile desktop add github:JiamingShi-JsPhys/3d-fabric#v1.1.1
 ```
 
 dsh refuses any package whose `package.json` lacks `dsh.bundle.patch` — that is the *"这个包没有声明组合包"* refusal (`reasonNotBundle`). Upgrading means uninstalling first; dsh does not replace an installed version in place.
@@ -92,7 +92,7 @@ dsh refuses any package whose `package.json` lacks `dsh.bundle.patch` — that i
 **CodeBuddy** — the same shape as Claude Code:
 
 ```text
-/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.0
+/plugin marketplace add https://github.com/JiamingShi-JsPhys/3d-fabric.git#v1.1.1
 ```
 
 ```text

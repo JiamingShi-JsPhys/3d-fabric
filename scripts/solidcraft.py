@@ -26,6 +26,7 @@ import pathlib
 import shutil
 import subprocess
 import sys
+import uuid
 from typing import Any, Dict, List, Optional, Sequence
 
 __all__ = [
@@ -295,9 +296,10 @@ def run(
     for path in [*out_paths, *check_paths]:
         path.parent.mkdir(parents=True, exist_ok=True)
 
-    results_file = pathlib.Path(
-        out_paths[0].parent if out_paths else check_paths[0].parent
-    ) / f".{SKILL_TMP_STEM}-results.json"
+    results_file = _temp_sidecar(
+        pathlib.Path(out_paths[0].parent if out_paths else check_paths[0].parent),
+        "-results.json",
+    )
 
     cmd: List[str] = [*_cli_argv(cli_path), "run", str(source), "--quiet",
                       "--results", "--json-out", str(results_file)]
@@ -328,6 +330,7 @@ def run(
         raise SolidCraftError(f"could not start the SolidCraft CLI: {exc}") from exc
 
     results: Any = None
+    kept_results: Optional[str] = None
     if results_file.is_file():
         try:
             results = json.loads(results_file.read_text(encoding="utf-8"))
@@ -335,6 +338,8 @@ def run(
             results = None
         if not keep_results:
             _unlink(results_file)
+        else:
+            kept_results = str(results_file)
 
     stderr = (proc.stderr or "").strip()
     error = None
@@ -353,6 +358,7 @@ def run(
         "stderr": stderr,
         "error": error,
         "results": results,
+        "results_path": kept_results,
         "command": cmd,
         "outputs": [str(p) for p in check_paths],
     }
@@ -370,7 +376,13 @@ def _unlink(path: pathlib.Path) -> None:
 # ---------------------------------------------------------------------------
 
 def _temp_sidecar(directory: pathlib.Path, suffix: str) -> pathlib.Path:
-    return directory / f".{SKILL_TMP_STEM}{suffix}"
+    """A per-call scratch path inside ``directory``.
+
+    The name carries the PID and a random tag, so two runs writing into the
+    same output folder cannot clobber each other's sidecar — a fixed name did
+    exactly that under concurrency.
+    """
+    return directory / f".{SKILL_TMP_STEM}-{os.getpid()}-{uuid.uuid4().hex[:8]}{suffix}"
 
 
 def eval_design(

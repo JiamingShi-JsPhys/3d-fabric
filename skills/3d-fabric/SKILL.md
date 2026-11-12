@@ -1,6 +1,6 @@
 ---
 name: 3d-fabric
-version: 1.1.0
+version: 1.1.1
 description: >
   The complete 3D modelling and 3D-printing toolchain for this machine: drive
   the installed SolidCraft CAD application by natural language, edit an
@@ -12,7 +12,7 @@ description: >
   Not for organic or artistic modelling, materials, lighting, rendering or
   animation — the thirty bundled Blender skills cover that half.
 metadata:
-  version: 1.1.0
+  version: 1.1.1
   author: Jiaming Shi
   license: MIT
   entry_point: run.py
@@ -32,7 +32,7 @@ metadata:
 | 确认能不能打印 | `inspect`（`model` 会自动跑） |
 | 修一个别人给的破模型 | `repair` |
 
-从 1.1.0 起本插件分两半，同一台机器上各管一段：
+从 1.1.1 起本插件分两半，同一台机器上各管一段：
 
 | 你想要的 | 用哪一半 |
 |---|---|
