@@ -90,7 +90,8 @@ gate 文件名带毫秒，同一秒内结束的两次运行会写成两个文件
 ## 依赖
 
 `docs/DEPENDENCIES.md` 是「能力 × 包 × 许可 × 必装或可选」的对照表，也写明某个包缺失时各动作报什么。
-简言之：`trimesh`、`numpy`、`scipy`、`networkx`、`lxml` 必装；`numpy-stl` 只用于测试；
+简言之：`trimesh`、`numpy`、`scipy`、`networkx`、`lxml` 必装；`opencv-python`、`Pillow`、`scikit-image` 是可选项，只有 12 个图像类技能 import；
+`numpy-stl` 只用于测试；
 SolidCraft 是 `model`、`script`、`measure`、`snapshot` 的前提；Blender 与 Blender MCP 是 30 个随附技能的前提，`run.py` 一行都不需要。
 
 ## 仓库布局
@@ -177,7 +178,7 @@ SolidCraft 是 `model`、`script`、`measure`、`snapshot` 的前提；Blender �
 python -m pytest
 ```
 
-138 个用例。覆盖几何引擎（STL 加载时的顶点焊接、绕支点的变换、绕序、反向壳体、空腔与反向零件的
+141 个用例。覆盖几何引擎（STL 加载时的顶点焊接、绕支点的变换、绕序、反向壳体、空腔与反向零件的
 区分、每一类缺陷、四边形与 32 边形边界的补洞、用独立 STL 读取器验证的导出往返）、CLI 契约（退出码、
 gate 文件、人类可读与 `--json` 两种输出）、读设计的动作（`measure` 的总量与开口体、`snapshot` 的 PNG
 产物、`script` 的还原、`model --in`）、随附参考（文件齐全、按 README 表校验 SHA-256、MIT 文本、

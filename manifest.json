@@ -1,6 +1,6 @@
 {
   "name": "3d-fabric",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "stage": "domain_extensions",
   "license": "MIT",
   "python_requires": ">=3.10",
@@ -82,6 +82,35 @@
     "networkx": "BSD-3-Clause",
     "lxml": "BSD-3-Clause",
     "numpy-stl": "BSD-3-Clause"
+  },
+  "optional_dependencies": {
+    "skills": {
+      "packages": [
+        "opencv-python>=4.8",
+        "Pillow>=10",
+        "scikit-image>=0.22"
+      ],
+      "imports": [
+        "cv2",
+        "PIL",
+        "skimage"
+      ],
+      "needed_by": [
+        "animation-quality-gate",
+        "atlas-uv-fitting",
+        "contour-to-mesh",
+        "multiview-fit-loop",
+        "orthographic-registration",
+        "reference-analysis-validator",
+        "reference-look-calibration",
+        "reference-to-3d",
+        "source-part-segmentation",
+        "texture-driven-mesh-fitting",
+        "texture-state-animation",
+        "wireframe-to-3d"
+      ],
+      "missing_message": "These twelve skills read and write images, so they need OpenCV, Pillow and scikit-image: pip install \"3d-fabric[skills]\". The seven run.py actions do not need them."
+    }
   },
   "sandbox_required": true,
   "sandbox_timeout_seconds": 300,

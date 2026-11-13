@@ -92,7 +92,8 @@ the message on stderr distinguishes it from a gate verdict.
 
 `docs/DEPENDENCIES.md` is the capability × package × licence × required-or-optional matrix, including
 what each action reports when a package is missing. In short: `trimesh`, `numpy`, `scipy`, `networkx` and
-`lxml` are required; `numpy-stl` is test-only; SolidCraft is required by `model`, `script`, `measure` and
+`lxml` are required; `opencv-python`, `Pillow` and `scikit-image` are optional and only the twelve
+image-processing skills import them; `numpy-stl` is test-only; SolidCraft is required by `model`, `script`, `measure` and
 `snapshot`; Blender plus a Blender MCP server are required by the thirty bundled skills and by nothing
 in `run.py`.
 
@@ -180,20 +181,22 @@ in `run.py`.
 python -m pytest
 ```
 
-138 tests. They cover the geometry engine (loading STL with welding, transforms about a pivot,
-winding, inverted shells, cavities versus inside-out bodies, every defect class, hole filling on quads
-and on a 32-gon boundary, export round-trips against an independent STL reader), the CLI contract
-(exit codes, gate files, human and `--json` output), the design-reading actions (`measure` totals and
-open bodies, `snapshot` PNG output, `script` extraction, `model --in`), the bundled references
-(presence, provenance hashes against the README table, the MIT text, and that `install.py --skill-dir`
-copies them), the bundled Blender skills (present, named by their frontmatter, every one bound to a
-Blender MCP tool set, cross-skill links resolving, hashes matching `skills/vendored.json`), the dsh
-package (the `dsh.bundle.patch` declaration, the CJS entry listing all thirty-one skills, version
-agreement with the Claude Code manifests), the platform half (all four plugin manifests and all six
-rule files, each rule file pinned to `AGENTS.md` so one edit cannot leave a host behind), the
-installer's own checks, and the SolidCraft bridge through a Python stub CLI — so the suite passes on a
-machine with SolidCraft installed or not. When the real CLI is present, one integration test runs
-against it and is skipped otherwise.
+141 tests. They cover the geometry engine (loading STL with welding, transforms about a pivot,
+winding, inverted shells, cavities versus inside-out bodies, every defect class, hole filling on
+quads and on a 32-gon boundary, export round-trips against an independent STL reader), the CLI
+contract (exit codes, gate files, human and `--json` output), the design-reading actions
+(`measure` totals and open bodies, `snapshot` PNG output, `script` extraction, `model --in`), the
+bundled references (presence, provenance hashes against the README table, the MIT text, and that
+`install.py --skill-dir` copies them), the bundled Blender skills (present, named by their
+frontmatter, every one bound to a Blender MCP tool set, cross-skill links resolving, hashes
+matching `skills/vendored.json`), the dependency declarations (every third-party import in a skill
+script has to appear in a manifest), the dsh package (the `dsh.bundle.patch` declaration, the CJS
+entry listing all thirty-one skills, version agreement with the Claude Code manifests), the
+platform half (all four plugin manifests and all six rule files, each rule file pinned to
+`AGENTS.md` so one edit cannot leave a host behind), the installer's own checks, and the
+SolidCraft bridge through a Python stub CLI — so the suite passes on a machine with SolidCraft
+installed or not. When the real CLI is present, one integration test runs against it and is
+skipped otherwise.
 
 The suite is part of the repository but not of the package: `package.json` lists what ships, and
 `tests/` is not in it.

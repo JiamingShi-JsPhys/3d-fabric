@@ -10,7 +10,7 @@
 
 [English](README.md) · **简体中文**
 
-**版本：** 1.1.1 | **许可：** MIT | **Python：** 3.10+ | **SolidCraft：** 已验证于 0.30.1
+**版本：** 1.1.2 | **许可：** MIT | **Python：** 3.10+ | **SolidCraft：** 已验证于 0.30.1
 
 > 社区插件，与 SolidCraft 项目没有隶属关系。使用前请读[安全与开源声明](#安全与开源声明)。
 
@@ -264,6 +264,7 @@ flowchart LR
 - **`--quality fine|finest` 需要 JSON 脚本。** 网格精度在 SolidCraft 里是导出命令的参数，所以精度会被注入脚本；`.sc` 设计只能用默认精度并在 `notes` 里说明。
 - **`script` 是重建，不是源文件。** 依赖保存设计状态的步骤（SolidCraft 的 `timeline.add`）会连带 CLI 自己的 replay 说明一起进 gate；用 `model` 重放它，不要假设能逐字节还原。
 - **一次一个模型。** 装配体通过 `body_count` 报告，不拆分、不摆放。
+- **12 个技能需要 OpenCV、Pillow、scikit-image。** 它们要读写图片，用 `pip install "3d-fabric[skills]"` 装上；没装时这些脚本会停在 `No module named 'cv2'`。七个 `run.py` 动作完全不用它们。
 - **Blender 技能是上游文本。** 它们的行为取决于你接的 Blender MCP 服务与 Blender 版本；哈希测试只能发现文件漂移，发现不了 Blender 的变化。
 
 ---

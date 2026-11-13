@@ -68,6 +68,14 @@ SKILL_TREES = [
 
 REQUIRED_MODULES = ("trimesh", "numpy", "scipy", "networkx", "lxml")
 
+# Optional: imported only by skill scripts that read or write images. The seven
+# run.py actions never touch them, so their absence is reported and never fatal.
+OPTIONAL_SKILL_MODULES = (
+    ("cv2", "opencv-python"),
+    ("PIL", "Pillow"),
+    ("skimage", "scikit-image"),
+)
+
 # ---------------------------------------------------------------------------
 # rule files for the hosts that have no plugin channel
 # ---------------------------------------------------------------------------
@@ -201,13 +209,27 @@ def _check_python() -> tuple:
     return ok, f"Python {sys.version.split()[0]} (need 3.10+)"
 
 
+def _importable(name: str) -> bool:
+    try:
+        __import__(name)
+    except ImportError:
+        return False
+    return True
+
+
+def _check_skill_deps() -> tuple:
+    """The optional half: reported, never able to fail the install."""
+    missing = [package for module, package in OPTIONAL_SKILL_MODULES if not _importable(module)]
+    if missing:
+        return False, (
+            "missing " + ", ".join(missing)
+            + " — the twelve image-reading skills need them, the seven actions do not"
+        )
+    return True, "opencv-python, Pillow, scikit-image present"
+
+
 def _check_deps() -> tuple:
-    missing = []
-    for name in REQUIRED_MODULES:
-        try:
-            __import__(name)
-        except ImportError:
-            missing.append(name)
+    missing = [name for name in REQUIRED_MODULES if not _importable(name)]
     if missing:
         return False, "missing Python packages: " + ", ".join(missing)
     import trimesh  # noqa: F401  (imported for the version string)
@@ -247,6 +269,8 @@ def action_check() -> int:
     }
     for label, (ok, detail) in results.items():
         print(f"  {label:<16} {'OK  ' if ok else 'MISS'}  {detail}")
+    skills_ok, skills_detail = _check_skill_deps()
+    print(f"  {'skill extras':<16} {'OK  ' if skills_ok else 'OPT '}  {skills_detail}")
 
     hard_ok = results["python"][0] and results["geometry stack"][0]
     cad_ok = results["solidcraft"][0]

@@ -10,7 +10,7 @@ You do not need to prepare a validation environment yourself. One gate sits behi
 
 **English** · [简体中文](README_zh.md)
 
-**Version:** 1.1.1 | **License:** MIT | **Python:** 3.10+ | **SolidCraft:** verified against 0.30.1
+**Version:** 1.1.2 | **License:** MIT | **Python:** 3.10+ | **SolidCraft:** verified against 0.30.1
 
 > A community plugin, not affiliated with the SolidCraft project. Read the [security statement](#security--open-source-statement) before use.
 
@@ -264,6 +264,7 @@ What was copied and why, the one omission, and where the MIT boundary falls are 
 - **`--quality fine|finest` needs a JSON script.** Tessellation quality is a per-command setting in SolidCraft, so the export is injected into the script; `.sc` designs use the default and say so in `notes`.
 - **`script` is a reconstruction, not a source file.** Steps that depend on saved design state (SolidCraft's `timeline.add`) come back with the CLI's own replay note attached to the gate; replay it with `model`, don't assume it rebuilds byte-for-byte.
 - **One model at a time.** An assembly is reported through `body_count`, not split or arranged.
+- **Twelve of the skills need OpenCV, Pillow and scikit-image.** They read and write images, so `pip install "3d-fabric[skills]"` adds them; without it those scripts stop with `No module named 'cv2'`. The seven `run.py` actions never import them.
 - **The Blender skills are upstream text.** Their behaviour depends on the Blender MCP server you connect and the Blender version you run; the hash tests catch drift in the files, not in Blender.
 
 ---

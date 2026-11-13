@@ -1,4 +1,4 @@
-# 3d-fabric — agent operating rules (v1.1.1)
+# 3d-fabric — agent operating rules (v1.1.2)
 
 3d-fabric is the **whole 3D toolchain for this machine in one plugin**, in two
 halves. The **CAD half** builds a part by natural language through SolidCraft,

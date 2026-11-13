@@ -4,6 +4,37 @@ All notable changes to 3d-fabric are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] — 2026-11-13
+
+A dependency-honesty release, prompted by an external security review. No code
+path changes: the seven actions, the gate schema and the exit codes are the same
+as 1.1.1.
+
+### Added
+
+- **The twelve image-processing skills declare what they import.** Their scripts
+  use `cv2`, `PIL` and `skimage`, and none of the three appeared in
+  `requirements.txt`, `pyproject.toml`, `manifest.json` or `install.py --check`.
+  On a clean install those skills stopped at `No module named 'cv2'` while
+  `install.py --check` reported the plugin ready. They are an optional extra now
+  — `pip install "3d-fabric[skills]"` — declared in all four places, in
+  `docs/DEPENDENCIES.md`, `THIRD_PARTY_LICENSES.txt` and both READMEs.
+- `install.py --check` prints a `skill extras` line marked `OK` or `OPT`. It
+  never changes the exit code: the seven actions do not import those packages,
+  and a machine that only inspects and repairs meshes does not need them.
+- A test reads every `skills/*/scripts/*.py` import from the AST and fails if a
+  third-party module is imported but declared in no manifest — the check that
+  would have caught this in 1.1.1.
+
+### Security review
+
+DeepSec Shield 0.2.0 was run over the plugin: `shield scan` at L1, L2 and L3,
+`shield agent-audit` and `supply-chain check` — 0 findings, on a scanner
+validated against deliberately vulnerable files first. The agent-security rules
+were also applied by hand to the 116 Markdown/YAML files Shield skips by
+extension: 0 findings. What the regexes could not see was the undeclared
+imports above; nothing else was found.
+
 ## [1.1.1] — 2026-11-12
 
 A correctness release, then a documentation one. Three bugs in `scripts/engine.py`,

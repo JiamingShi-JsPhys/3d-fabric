@@ -41,6 +41,30 @@ lxml
     Used for: the XML writer trimesh's 3MF exporter needs when a mesh is
     exported as .3mf.
 
+Optional — imported only by the twelve image-processing skills, never by
+the seven run.py actions; installed with `pip install "3d-fabric[skills]"`.
+
+opencv-python
+    Version used in development: 4.x
+    Licence: Apache-2.0 (the OpenCV library itself is Apache-2.0)
+    https://github.com/opencv/opencv-python
+    Used for: reading reference and wireframe images, mask operations and
+    contour extraction in the skills that start from a picture.
+
+Pillow
+    Version used in development: 10.x
+    Licence: MIT-CMU (HPND)
+    https://python-pillow.org/
+    Used for: loading and saving the PNG frames that the HUD, texture and
+    animation skill scripts read and write.
+
+scikit-image
+    Version used in development: 0.22
+    Licence: BSD-3-Clause
+    https://scikit-image.org/
+    Used for: the structural-similarity comparison in
+    reference-analysis-validator and reference-to-3d.
+
 numpy-stl
     Version used in development: 3.x
     Licence: BSD-3-Clause

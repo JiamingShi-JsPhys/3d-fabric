@@ -1,6 +1,6 @@
 ---
 name: 3d-fabric
-version: 1.1.1
+version: 1.1.2
 description: >
   The complete 3D modelling and 3D-printing toolchain for this machine: drive
   the installed SolidCraft CAD application by natural language, edit an
@@ -12,7 +12,7 @@ description: >
   Not for organic or artistic modelling, materials, lighting, rendering or
   animation — the thirty bundled Blender skills cover that half.
 metadata:
-  version: 1.1.1
+  version: 1.1.2
   author: Jiaming Shi
   license: MIT
   entry_point: run.py
