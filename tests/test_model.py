@@ -232,3 +232,64 @@ def test_probe_action_exit_two_when_missing(monkeypatch, capsys):
     })
     assert fabric.main(["--action", "probe", "--json"]) == 2
     assert _last_json(capsys)["reason"] == sc.MISSING_MESSAGE
+
+
+# ---------------------------------------------------------------------------
+# booleans that do not fuse
+# ---------------------------------------------------------------------------
+
+def test_a_boolean_that_leaves_two_bodies_fails_the_gate(tmp_path, monkeypatch, capsys):
+    script = tmp_path / "cut.json"
+    script.write_text(json.dumps({"commands": [
+        {"command": "solid.box", "params": {"length": 10, "width": 10, "height": 10}},
+        {"command": "solid.cylinder",
+         "params": {"radius": 2, "height": 12, "operation": "cut",
+                    "body_name": "Hole"}},
+    ]}), encoding="utf-8")
+    monkeypatch.setenv("STUB_MODE", "twobody")
+    out = tmp_path / "part.stl"
+    code = fabric.main(["--action", "model", "--script", str(script),
+                        "--output", str(out), "--solidcraft", str(STUB),
+                        "--no-save-design", "--json"])
+    assert code == 1
+    gate = _last_json(capsys)
+    assert gate["status"] == "FAIL"
+    assert "did not fuse" in gate["reason"]
+    codes = {issue["code"] for issue in gate["data"]["inspection"]["printability"]["issues"]}
+    assert "boolean_left_multiple_bodies" in codes
+
+
+def test_two_bodies_without_a_boolean_is_still_informational(tmp_path, monkeypatch, capsys):
+    script = tmp_path / "two.json"
+    script.write_text(json.dumps({"commands": [
+        {"command": "solid.box", "params": {"length": 10, "width": 10, "height": 10}},
+    ]}), encoding="utf-8")
+    monkeypatch.setenv("STUB_MODE", "twobody")
+    out = tmp_path / "part.stl"
+    code = fabric.main(["--action", "model", "--script", str(script),
+                        "--output", str(out), "--solidcraft", str(STUB),
+                        "--no-save-design", "--json"])
+    assert code == 0
+    gate = _last_json(capsys)
+    assert gate["status"] == "PASS"
+    codes = {issue["code"] for issue in gate["data"]["inspection"]["printability"]["issues"]}
+    assert "multi_body" in codes and "boolean_left_multiple_bodies" not in codes
+
+
+def test_a_boolean_retry_warning_cannot_sit_next_to_a_pass(tmp_path, monkeypatch, capsys):
+    script = tmp_path / "join.json"
+    script.write_text(json.dumps({"commands": [
+        {"command": "solid.box", "params": {"length": 10, "width": 10, "height": 10}},
+        {"command": "solid.box",
+         "params": {"length": 5, "width": 5, "height": 5, "operation": "join",
+                    "body_name": "Bump"}},
+    ]}), encoding="utf-8")
+    monkeypatch.setenv("STUB_MODE", "booleanwarn")
+    out = tmp_path / "part.stl"
+    code = fabric.main(["--action", "model", "--script", str(script),
+                        "--output", str(out), "--solidcraft", str(STUB),
+                        "--no-save-design", "--json"])
+    assert code == 2
+    gate = _last_json(capsys)
+    assert gate["status"] == "UNVERIFIED"
+    assert "Boolean retry" in gate["reason"]

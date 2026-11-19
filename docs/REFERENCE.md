@@ -181,7 +181,7 @@ in `run.py`.
 python -m pytest
 ```
 
-141 tests. They cover the geometry engine (loading STL with welding, transforms about a pivot,
+145 tests. They cover the geometry engine (loading STL with welding, transforms about a pivot,
 winding, inverted shells, cavities versus inside-out bodies, every defect class, hole filling on
 quads and on a 32-gon boundary, export round-trips against an independent STL reader), the CLI
 contract (exit codes, gate files, human and `--json` output), the design-reading actions
@@ -190,13 +190,13 @@ bundled references (presence, provenance hashes against the README table, the MI
 `install.py --skill-dir` copies them), the bundled Blender skills (present, named by their
 frontmatter, every one bound to a Blender MCP tool set, cross-skill links resolving, hashes
 matching `skills/vendored.json`), the dependency declarations (every third-party import in a skill
-script has to appear in a manifest), the dsh package (the `dsh.bundle.patch` declaration, the CJS
-entry listing all thirty-one skills, version agreement with the Claude Code manifests), the
-platform half (all four plugin manifests and all six rule files, each rule file pinned to
-`AGENTS.md` so one edit cannot leave a host behind), the installer's own checks, and the
-SolidCraft bridge through a Python stub CLI — so the suite passes on a machine with SolidCraft
-installed or not. When the real CLI is present, one integration test runs against it and is
-skipped otherwise.
+script has to appear in a manifest, a boolean that leaves several shells fails the gate), the dsh
+package (the `dsh.bundle.patch` declaration, the CJS entry listing all thirty-one skills, version
+agreement with the Claude Code manifests), the platform half (all four plugin manifests and all
+six rule files, each rule file pinned to `AGENTS.md` so one edit cannot leave a host behind), the
+installer's own checks, and the SolidCraft bridge through a Python stub CLI — so the suite passes
+on a machine with SolidCraft installed or not. When the real CLI is present, one integration test
+runs against it and is skipped otherwise.
 
 The suite is part of the repository but not of the package: `package.json` lists what ships, and
 `tests/` is not in it.

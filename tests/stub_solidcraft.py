@@ -78,6 +78,12 @@ def main(argv):
     import trimesh
 
     mesh = trimesh.creation.box(extents=(10.0, 10.0, 10.0))
+    if mode == "twobody":
+        # What SolidCraft returns when a coplanar join does not fuse: two
+        # closed shells, no error, and a volume that still looks plausible.
+        second = trimesh.creation.box(extents=(10.0, 10.0, 10.0))
+        second.apply_translation((20.0, 0.0, 0.0))
+        mesh = trimesh.util.concatenate([mesh, second])
     for target in _export_paths(argv, script):
         target.parent.mkdir(parents=True, exist_ok=True)
         if target.suffix.lower() in (".step", ".stp"):
@@ -95,8 +101,10 @@ def main(argv):
     if "--json-out" in argv:
         out = pathlib.Path(argv[argv.index("--json-out") + 1])
         out.parent.mkdir(parents=True, exist_ok=True)
+        warning = ("Boolean retry: temporary coincident-face separation"
+                   if mode == "booleanwarn" else None)
         out.write_text(json.dumps([
-            {"name": "Box1", "warning": None, "created_bodies": ["Body1"]},
+            {"name": "Box1", "warning": warning, "created_bodies": ["Body1"]},
             *[{"path": str(p)} for p in _export_paths(argv, script)],
         ]), encoding="utf-8")
 

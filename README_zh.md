@@ -2,15 +2,15 @@
 
 **面向 3D 建模与制造工作流的打印质量门，自带 30 个 Blender 技能。**
 
-使用它不需要你先准备验证环境。一个门管住网格走过的每条路：自然语言经本机 SolidCraft CLI 建模、别人发来的设计、扫描仪出的 STL、Blender 导出的网格。七个 CAD 动作共用一套记录格式与一套退出码，另有 30 个 Blender 技能覆盖"不是有尺寸的零件"的那一半 3D 工作。
+装上之后，网格走过的每条路都止于同一道门：自然语言经本机 SolidCraft CLI 建模、别人发来的设计、扫描仪出的 STL、Blender 导出的网格。七个 CAD 动作写同一种 gate 记录、用同一套退出码；另有 30 个 Blender 技能，负责"没有尺寸的那一半"3D 工作。
 
-- **对 Agent：** 每个动作都写一份类型化 gate，`--json` 与落盘文件逐字节一致；缺 SolidCraft 时明确报 `UNVERIFIED`，而不是默默放行。
-- **对人：** 一个任务一条命令，判定只有三个词，`repair` 会逐步说明它改了什么。
-- **对打印机：** 水密性、绕序、非流形边，每个封闭壳单独检查——一个里外反了的零件藏不进一个正确的零件后面。
+- Agent 宿主拿到的是每个动作的类型化 gate，`--json` 与落盘文件逐字节一致；缺 SolidCraft 时明确报 `UNVERIFIED`，而不是默默放行。
+- 人这边一个任务一条命令，判定只有三个词，`repair` 会说清它改了什么。
+- 打印机这边拿到水密性、绕序、非流形边，每个封闭壳单独检查，一个里外反了的零件藏不进一个正确的零件后面。
 
 [English](README.md) · **简体中文**
 
-**版本：** 1.1.2 | **许可：** MIT | **Python：** 3.10+ | **SolidCraft：** 已验证于 0.30.1
+**版本：** 1.1.3 | **许可：** MIT | **Python：** 3.10+ | **SolidCraft：** 已验证于 0.30.1
 
 > 社区插件，与 SolidCraft 项目没有隶属关系。使用前请读[安全与开源声明](#安全与开源声明)。
 
@@ -44,15 +44,15 @@
 
 ## 为什么需要 3d-fabric？
 
-Agent 能写参数化 CAD 脚本，但它看不出结果能不能打印；而"建出来了"也不等于"能打印"。SolidCraft 对一次完全没切中的切除照样返回 `ok`，退出码 0 也不代表文件真的写了出去，切片软件则会对一个处处不闭合的网格直接拒收。回答这些问题的工具通常是分开的：一个建模技能产零件、一个审计技能判断它、一个查看器看它、再一个脚本修补别人发来的破损 STL。
+Agent 能写参数化 CAD 脚本，但结果能不能打印是另一个问题，SolidCraft 不回答它：一次完全没切中的切除照样返回 `ok`，退出码 0 不代表文件写出去了，切片软件碰到处处不闭合的网格直接拒收。回答这个问题通常要四个互不相认的工具：一个建模的、一个审计的、一个看图的，再加一个修补别人发来破损 STL 的脚本。
 
-3d-fabric 从两个层面回应这个问题，两者都在同一个仓库里。
+3d-fabric 把两半放进同一个仓库。
 
-- **桥负责在两种语言之间转换。** `scripts/solidcraft.py` 会在所有可能的位置找到 CLI（`--solidcraft`、`SOLIDCRAFT_CLI`、`SOLIDCRAFT_HOME`、`PATH`，以及厂商默认安装目录），用 `--version` 验活以保证 `PATH` 上的旧壳子混不进来，带 `--out` 执行脚本，再逐一确认承诺的文件真实存在且非空。同一个桥也回答"别人做的设计"的问题：`script` 把 `.sc` 还原成命令列表，`model --in` 在它上面重放补丁，`measure` 从 B-rep 读出体积、质量与拓扑，`snapshot` 渲染成 PNG。
-- **门提供桥自己给不出的判定。** `scripts/engine.py` 测量切片软件真正在意的东西——水密性、绕序一致性、法线朝向、非流形边、边界环、退化面、包围盒与带符号体积——并归纳成 `ready_to_print`、`needs_repair`、`blocked` 三档。每个缺陷都带代码、严重级别与计数。失败的模型永远不会被报告为成功。
-- **两半有意解耦。** `inspect` 与 `repair` 完全不需要 SolidCraft，所以扫描件、下载件、别家 CAD 出的网格，在一台从未装过 CAD 的机器上照样能查能修。
+- **桥负责在两种语言之间转换。** `scripts/solidcraft.py` 会在所有可能的位置找到 CLI（`--solidcraft`、`SOLIDCRAFT_CLI`、`SOLIDCRAFT_HOME`、`PATH`，以及厂商默认安装目录），用 `--version` 验活，保证 `PATH` 上的旧壳子混不进来，带 `--out` 执行脚本，再逐一确认承诺的文件真实存在且非空。同一个桥也回答"别人做的设计"的问题：`script` 把 `.sc` 还原成命令列表，`model --in` 在它上面重放补丁，`measure` 从 B-rep 读出体积、质量与拓扑，`snapshot` 渲染成 PNG。
+- **门提供桥自己给不出的判定。** `scripts/engine.py` 测量切片软件真正在意的东西（水密性、绕序一致性、法线朝向、非流形边、边界环、退化面、包围盒、带符号体积），归纳成 `ready_to_print`、`needs_repair`、`blocked` 三档。每个缺陷都带代码、严重级别与计数。失败的模型不会被报告成成功。
+- **两半有意解耦。** `inspect` 与 `repair` 完全不需要 SolidCraft，扫描件、下载件、别家 CAD 出的网格，在一台从未装过 CAD 的机器上照样能查能修。
 
-**什么时候用哪一半。** 有尺寸、要打印的零件是 CAD：`run.py` 加 SolidCraft。轮廓、表面质感或运动才是重点的东西是 Blender：随附技能，需要本机 Blender 和 Blender MCP。两半共享一条交付路径——Blender 的网格要打印，先导出 STL，再走 `run.py --action inspect` 与 `repair`。
+按活选半。有尺寸、要打印的零件是 CAD：`run.py` 加 SolidCraft。轮廓、表面质感或运动才是重点的东西是 Blender：随附技能，需要本机 Blender 和 Blender MCP。两半共享一条交付路径：Blender 的网格要打印，先导出 STL，再走 `run.py --action inspect` 与 `repair`。
 
 ---
 
@@ -77,7 +77,7 @@ Agent 能写参数化 CAD 脚本，但它看不出结果能不能打印；而"�
 - 浏览器版 <https://solidcraft.io> 免安装，但它不提供 `solidcraft-cli`，**本插件用不了**。
 - 装完 `solidcraft-cli --version` 能打印出版本号就成了；它不在 `PATH` 上时用 `--solidcraft`、`SOLIDCRAFT_CLI` 或 `SOLIDCRAFT_HOME` 指过去，细节见 [docs/INSTALL_COMMANDS_zh.md](docs/INSTALL_COMMANDS_zh.md)。
 
-> **只有四个动作需要它**：`model`、`script`、`measure`、`snapshot`。`inspect` 与 `repair` 不需要——扫描件、下载件、别家 CAD 出的网格，在一台没装过 SolidCraft 的机器上照样能查能修。
+> **只有四个动作需要它**：`model`、`script`、`measure`、`snapshot`。`inspect` 与 `repair` 不需要：扫描件、下载件、别家 CAD 出的网格，在一台没装过 SolidCraft 的机器上照样能查能修。
 
 30 个 Blender 技能还需要两样东西，都来自 Blender 生态，本插件不带：本机 [Blender](https://www.blender.org/download/)（4.x 即可），以及一个把 Blender 暴露成 `mcp__blender__*` 或 `mcp__blender_official__*` 的 Blender MCP 服务。缺任何一样，这些技能会直接说缺什么，不会假装渲染过；`run.py` 一行都不碰 Blender。
 
@@ -109,13 +109,13 @@ Claude Code、Codex、dsh 与 CodeBuddy 用一行插件命令即可；Cursor、W
 
 ### 在对话框里用（不用 shell、不用路径）
 
-以插件方式装好后，技能就在一个 `/` 之后，并按任务词汇触发——「3D 打印」「参数化建模」「建一个实体模型」「做个外壳/支架」——所以第一句话就可以是需求本身：
+以插件方式装好后，技能就在一个 `/` 之后，并按任务词汇触发（「3D 打印」「参数化建模」「建一个实体模型」「做个外壳/支架」），所以第一句话就可以是需求本身：
 
 ```text
 /3d-fabric  一块 120x70x8 的转接板，四角 R8 圆角，中间 40x20 通孔，四角 Ø4.5 孔距边 12mm
 ```
 
-Agent 会依次探测、写 SolidCraft 脚本、调用 `model`、读 gate，然后报出尺寸、体积与判定——或者修掉失败的那一步再重跑。设计已经存在时，它会用 `script` 读懂它、`measure` 拿质量和体积、`snapshot` 出图、`model --in` 落改动。完整操作规则（包括怎么读 `error: step N`）见 [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md)。
+Agent 会依次探测、写 SolidCraft 脚本、调用 `model`、读 gate，然后报出尺寸、体积与判定，或者修掉失败的那一步再重跑。设计已经存在时，它会用 `script` 读懂它、`measure` 拿质量和体积、`snapshot` 出图、`model --in` 落改动。完整操作规则（包括怎么读 `error: step N`）见 [skills/3d-fabric/SKILL.md](skills/3d-fabric/SKILL.md)。
 
 ### 在终端里用（这一段不需要 SolidCraft）
 
@@ -157,7 +157,7 @@ python run.py --action repair --input examples/damaged_part.stl --output repaire
 
 | 动作 | 作用 | 需要 SolidCraft |
 | --- | --- | --- |
-| `probe` | 定位并验活 CLI | ——（就是找它） |
+| `probe` | 定位并验活 CLI | 否（就是找它） |
 | `model` | 跑脚本、导出、自动体检；`--in` 修改已有设计 | **是** |
 | `script` | 把 `.sc` / `.step` 还原成 `{"commands": [...]}` 脚本 | **是** |
 | `measure` | 从 B-rep 读体积、质量、面积、包围盒、面类型与参数 | **是** |
@@ -213,13 +213,13 @@ flowchart LR
     EXT["外部网格<br/>扫描件、下载、其他 CAD"] --> INSP
 ```
 
-这张图说明三件事：
+`probe` 是唯一的环境门。只有 `--version` 退出码为 0 时它才接受一个 CLI，所以 `PATH` 上的旧壳子会被拒绝而不是被使用。四个动作需要它；`inspect` 与 `repair` 不需要。
 
-- **`probe` 是唯一的环境门。** 只有 `--version` 退出码为 0 时它才接受一个 CLI，所以 `PATH` 上的旧壳子会被拒绝而不是被使用。四个动作需要它；`inspect` 与 `repair` 不需要。
-- **写出的文件要被检查，而不是假定。** 命令列表里没带导出命令时 SolidCraft 会以退出码 0 结束却不落盘，因此 `model` 会逐一核实承诺的文件存在且非空，把这种静默执行判为 `FAIL`。
-- **本插件建的零件与外部网格走同一个门。** 无论出自 `model` 还是扫描仪，`inspect` 都给出同一套缺陷代码与同样三档判定。
+写出的文件要被检查，而不是假定。命令列表里没带导出命令时，SolidCraft 会以退出码 0 结束却不落盘，因此 `model` 会逐一核实承诺的文件存在且非空，把这种静默执行判为 `FAIL`。
 
-建模成功会并排产出三个文件：网格（`bracket.stl`）、可编辑设计（`bracket.sc`）和生成它的原始脚本（`bracket.solidcraft.json`）。用 SolidCraft 打开 `.sc` 改参数再导出，或者直接重跑脚本，都能复现这个零件——而 `script` 能把这份命令列表从一个"没带原始脚本"的设计里找回来。
+本插件建的零件与外部网格走同一个门。无论出自 `model` 还是扫描仪，`inspect` 都给出同一套缺陷代码与同样三档判定。
+
+建模成功会并排产出三个文件：网格（`bracket.stl`）、可编辑设计（`bracket.sc`）和生成它的原始脚本（`bracket.solidcraft.json`）。用 SolidCraft 打开 `.sc` 改参数再导出，或者直接重跑脚本，都能复现这个零件；`script` 还能把这份命令列表从一个"没带原始脚本"的设计里找回来。
 
 ---
 
@@ -227,13 +227,13 @@ flowchart LR
 
 动作参数、gate 记录、退出码、依赖对照、仓库布局与测试套件都在 **[docs/REFERENCE_zh.md](docs/REFERENCE_zh.md)** 里，所以这一页可以只当快速上手。
 
-最先会遇到的三句话：`ready_to_print` 是过，`needs_repair` 是有缺陷但这个插件能修，`blocked` 是修不了——非流形边、空文件、零厚度零件。
+最先会遇到的三句话：`ready_to_print` 是过，`needs_repair` 是有缺陷但这个插件能修，`blocked` 是修不了：非流形边、空文件、零厚度零件。
 
 ---
 
 ## 安全与开源声明
 
-> **免责声明**：本仓库是为自动化 3D 建模流程而编写的社区插件，与 SolidCraft 项目没有隶属、赞助或背书关系。它不包含 SolidCraft 源码，不打包其二进制或资源；SolidCraft 需由用户自行安装。这里唯一复制的 SolidCraft 材料是它自己的四份 Agent 参考文档——逐字未改、按其 MIT 许可收录，并保留版权声明与 NOTICE，见[随附第三方材料](#随附第三方材料)。
+> **免责声明**：本仓库是为自动化 3D 建模流程而编写的社区插件，与 SolidCraft 项目没有隶属、赞助或背书关系。它不包含 SolidCraft 源码，不打包其二进制或资源；SolidCraft 需由用户自行安装。这里唯一复制的 SolidCraft 材料是它自己的四份 Agent 参考文档，逐字未改、按其 MIT 许可收录，并保留版权声明与 NOTICE，见[随附第三方材料](#随附第三方材料)。
 >
 > 插件不会把你的模型发送到任何地方：不发起网络请求、不执行 `eval`，唯一的子进程就是你本机已安装的 `solidcraft-cli`。
 
@@ -255,16 +255,18 @@ flowchart LR
 - **不做切片。** G-code、支撑、悬垂与壁厚分析属于切片软件；3d-fabric 止于打印判定。
 - **非流形边只报告、不修复。** 三个面共用的边会让 `success` 保持 `false`，剩余数量留在 `after.topology`；要拆开得用 CAD 工具。
 - **STEP 不做体检。** 它是 B-rep，没有三角网格；请先导出 STL。
+- **布尔必须真的合成，否则判定失败。** SolidCraft 对共面的 join 可能返回两个壳体而不报错。脚本里有 `join` 或 `cut` 时，多体结果按失败处理，判定里会写明；把两个实体重叠 1-3 mm 再重建。
 - **单位是假定值。** STL 不带单位；报告按 `mm` 处理并标注这是假设。
 
 ### 边界情况
 
 - **补洞是平面扇面。** 出平面厚度超过半径 5% 的环会被跳过并写明原因，而不是硬填；跨越孔洞的曲面不会被重建。
-- **不做自交检测**——`trimesh` 没有稳健实现，所以自交的网格仍可能过门。
+- **不做自交检测**：`trimesh` 没有稳健实现，所以自交的网格仍可能过门。
 - **`--quality fine|finest` 需要 JSON 脚本。** 网格精度在 SolidCraft 里是导出命令的参数，所以精度会被注入脚本；`.sc` 设计只能用默认精度并在 `notes` 里说明。
 - **`script` 是重建，不是源文件。** 依赖保存设计状态的步骤（SolidCraft 的 `timeline.add`）会连带 CLI 自己的 replay 说明一起进 gate；用 `model` 重放它，不要假设能逐字节还原。
 - **一次一个模型。** 装配体通过 `body_count` 报告，不拆分、不摆放。
 - **12 个技能需要 OpenCV、Pillow、scikit-image。** 它们要读写图片，用 `pip install "3d-fabric[skills]"` 装上；没装时这些脚本会停在 `No module named 'cv2'`。七个 `run.py` 动作完全不用它们。
+- **`--section` 只透传，不验证。** 剖切值落在零件之外时，SolidCraft 会照常渲染整件、不报错；剖切结果要紧时，和未剖切的渲染图对一遍。
 - **Blender 技能是上游文本。** 它们的行为取决于你接的 Blender MCP 服务与 Blender 版本；哈希测试只能发现文件漂移，发现不了 Blender 的变化。
 
 ---

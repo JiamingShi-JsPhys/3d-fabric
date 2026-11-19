@@ -313,11 +313,19 @@ def analyze(
     *,
     source: Optional[str] = None,
     fmt: Optional[str] = None,
+    boolean_expected: bool = False,
 ) -> Dict[str, Any]:
     """Return the stable JSON report dict for ``mesh``.
 
     Report sections: ``geometry`` (measurements), ``topology`` (defects) and
     ``printability`` (verdict + issue list).  Everything is JSON-serialisable.
+
+    ``boolean_expected`` is True when the script that produced this mesh ran a
+    join or a cut.  SolidCraft can leave a boolean unfused — two coplanar solids
+    joined end to end come back as two bodies with no error at all — so in that
+    case a multi-body result is an error rather than the usual informational
+    note.  Skipping this is how a "silent" boolean failure used to reach
+    ``ready_to_print``.
     """
     uniq_edges, counts = _edge_multiplicity(mesh)
     boundary_edges = uniq_edges[counts == 1]
@@ -404,13 +412,24 @@ def analyze(
             duplicate_vertices,
         )
     if body_count is not None and body_count > 1:
-        issue(
-            "multi_body",
-            "info",
-            "more than one closed shell; print either as separate parts or "
-            "joined deliberately",
-            body_count,
-        )
+        if boolean_expected:
+            issue(
+                "boolean_left_multiple_bodies",
+                "error",
+                "the script ran a join or a cut but the result is still "
+                f"{body_count} separate shells; SolidCraft leaves coplanar or "
+                "tangent booleans unfused without reporting an error, so "
+                "overlap the two solids by 1-3 mm and rebuild",
+                body_count,
+            )
+        else:
+            issue(
+                "multi_body",
+                "info",
+                "more than one closed shell; print either as separate parts or "
+                "joined deliberately",
+                body_count,
+            )
     if float(extents.min()) <= 0:
         issue("flat_extents", "warning", "the model has zero size along at least one axis")
 

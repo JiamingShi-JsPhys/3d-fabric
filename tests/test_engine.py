@@ -438,3 +438,30 @@ def test_export_rejects_unknown_format(tmp_path, cube):
 def test_export_creates_parent_directory(tmp_path, cube):
     out = engine.export_mesh(cube, tmp_path / "deep" / "nested" / "out.stl")
     assert out.is_file()
+
+
+# ---------------------------------------------------------------------------
+# a boolean that did not fuse
+# ---------------------------------------------------------------------------
+
+def test_a_multi_body_mesh_is_an_error_when_the_script_ran_a_boolean():
+    first = trimesh.creation.box(extents=(10.0, 10.0, 10.0))
+    second = trimesh.creation.box(extents=(10.0, 10.0, 10.0))
+    second.apply_translation((20.0, 0.0, 0.0))
+    mesh = trimesh.util.concatenate([first, second])
+
+    # Without a boolean in the script two shells are a legitimate result.
+    relaxed = engine.analyze(mesh)
+    relaxed_codes = {issue["code"] for issue in relaxed["printability"]["issues"]}
+    assert relaxed["printability"]["verdict"] == "ready_to_print"
+    assert "multi_body" in relaxed_codes
+
+    # With one, the same mesh is the failure mode a coplanar join produces.
+    strict = engine.analyze(mesh, boolean_expected=True)
+    strict_codes = {issue["code"] for issue in strict["printability"]["issues"]}
+    assert strict["printability"]["verdict"] == "needs_repair"
+    assert "boolean_left_multiple_bodies" in strict_codes
+    assert "multi_body" not in strict_codes
+    body_issue = next(issue for issue in strict["printability"]["issues"]
+                      if issue["code"] == "boolean_left_multiple_bodies")
+    assert "1-3 mm" in body_issue["message"]

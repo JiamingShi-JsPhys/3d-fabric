@@ -328,6 +328,40 @@ def _resolve_source(args) -> tuple:
     )
 
 
+#: SolidCraft's own warning text when a boolean may not have fused.  Its
+#: checking reference says a ``Boolean retry:`` line means the result may be
+#: wrong, and coincident planar faces are the usual cause.
+_BOOLEAN_WARNING_MARKERS = ("boolean", "coincident", "tool displacement")
+
+#: ``operation`` values on ``solid.box`` / ``solid.cylinder`` that fuse or
+#: remove one body.  ``solid.combine`` does the same as a command of its own.
+_BOOLEAN_OPERATIONS = {"cut", "join", "union", "subtract", "intersect", "difference"}
+
+
+def _script_has_boolean(commands) -> bool:
+    """True when the script asks SolidCraft to fuse or cut two solids."""
+    for step in commands or []:
+        if not isinstance(step, dict):
+            continue
+        name = str(step.get("command", "")).lower()
+        params = step.get("params")
+        operation = ""
+        if isinstance(params, dict):
+            operation = str(params.get("operation", "")).lower()
+        if operation in _BOOLEAN_OPERATIONS or "combine" in name:
+            return True
+    return False
+
+
+def _boolean_warning(warnings) -> "str | None":
+    """Return the first SolidCraft warning that says a boolean may be wrong."""
+    for warning in warnings or []:
+        lowered = str(warning).lower()
+        if any(marker in lowered for marker in _BOOLEAN_WARNING_MARKERS):
+            return str(warning)
+    return None
+
+
 def _step_warnings(results) -> list:
     if not isinstance(results, list):
         return []
@@ -486,7 +520,10 @@ def action_model(args) -> int:
         engine.export_mesh(mesh, out, ascii_stl=args.ascii,
                            file_type=_MODEL_EXPORTS[fmt]["engine"])
 
-    analysis = engine.analyze(mesh, source=str(out), fmt=fmt)
+    analysis = engine.analyze(
+        mesh, source=str(out), fmt=fmt,
+        boolean_expected=_script_has_boolean(sc.read_commands(source)),
+    )
     data["inspection"] = analysis
     status = _VERDICT_TO_STATUS[analysis["printability"]["verdict"]]
     reason = (
@@ -494,6 +531,21 @@ def action_model(args) -> int:
         f"{analysis['geometry']['face_count']} faces, "
         f"{analysis['topology']['hole_loop_count']} holes"
     )
+    # A boolean that left several shells is a definite wrong result, not a
+    # mesh our repair can fix, so it fails the gate instead of asking for one.
+    issue_codes = {issue["code"] for issue in analysis["printability"]["issues"]}
+    if "boolean_left_multiple_bodies" in issue_codes:
+        status = "FAIL"
+        reason = (
+            f"built {out.name} but a boolean did not fuse: "
+            f"{analysis['geometry']['body_count']} separate shells came back"
+        )
+    # SolidCraft's own "Boolean retry" warning says the result may be wrong.
+    # It must not sit next to a PASS.
+    boolean_warning = _boolean_warning(data["solidcraft"]["warnings"])
+    if boolean_warning and status == "PASS":
+        status = "UNVERIFIED"
+        reason = f"SolidCraft warned that a boolean may be wrong: {boolean_warning}"
 
     gate = _gate(status, reason, artifacts, data)
     gate_path = _write_gate(args, gate)

@@ -4,6 +4,31 @@ All notable changes to 3d-fabric are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] — 2026-11-19
+
+A gate release, driven by a full modelling session on SolidCraft 0.30.1. A
+boolean that did not fuse used to reach `ready_to_print`; it fails now.
+
+### Fixed
+
+- **A join or cut that left several bodies fails the gate.** SolidCraft can
+  return two separate shells from a coplanar join without printing an error,
+  and `model` reported `ready_to_print` because a multi-body result was only an
+  informational note. When the script contains a boolean command, a multi-body
+  result is an error (`boolean_left_multiple_bodies`) and the gate is `FAIL`,
+  with the hint that makes it fuse: overlap the two solids by 1-3 mm.
+- **SolidCraft's "Boolean retry" warning no longer sits next to a `PASS`.**
+  Its own checking reference says that warning means the result may be wrong. A
+  step warning mentioning a boolean, coincident faces or tool displacement now
+  downgrades the gate to `UNVERIFIED` and quotes the warning.
+
+### Notes
+
+- `model` always passes `--out`, so a script's own `output` field is honoured
+  even though SolidCraft ignores that field when the CLI is called directly.
+- `snapshot --section` is passed through unverified: SolidCraft renders the
+  uncut model without an error when the section value falls outside the part.
+
 ## [1.1.2] — 2026-11-13
 
 A dependency-honesty release, prompted by an external security review. No code
